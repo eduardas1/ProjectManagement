@@ -1,0 +1,8 @@
+@model int
+@{
+    ViewData["Title"] = Model == 404 ? "Page not found" : "Request failed";
+}
+
+<h1>@ViewData["Title"]</h1>
+<p>@(Model == 404 ? "The requested page could not be found." : "The request could not be completed.")</p>
+<p><a asp-controller="Home" asp-action="Index">Back to home</a></p>

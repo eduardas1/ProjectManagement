@@ -11,14 +11,23 @@ public class HomeController : Controller
         return View();
     }
 
-    public IActionResult Privacy()
-    {
-        return View();
-    }
-
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {
+        Response.StatusCode = StatusCodes.Status500InternalServerError;
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+    }
+
+    [Route("Home/Status/{statusCode:int}")]
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult Status(int statusCode)
+    {
+        if (statusCode < 400 || statusCode > 599)
+        {
+            return NotFound();
+        }
+
+        Response.StatusCode = statusCode;
+        return View(statusCode);
     }
 }

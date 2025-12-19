@@ -1,0 +1,16 @@
+.git
+.vs
+.idea
+**/bin
+**/obj
+**/node_modules
+**/*.db
+**/*.db-*
+**/*.sqlite
+**/*.sqlite-*
+**/.env
+**/.env.*
+**/appsettings.Local.json
+data
+keys
+secrets

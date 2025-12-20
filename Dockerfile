@@ -13,7 +13,7 @@ RUN dotnet publish src/Workboard.Web/Workboard.Web.csproj -c Release --no-restor
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0.13-noble
 WORKDIR /app
-COPY --from=build /app/publish .
+COPY --from=build --chown=app:app /app/publish .
 USER app
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "Workboard.Web.dll"]

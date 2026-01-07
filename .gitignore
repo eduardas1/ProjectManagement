@@ -490,3 +490,4 @@ $RECYCLE.BIN/
 /keys/
 /secrets/
 appsettings.Local.json
+App_Data/

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Workboard.Web.Models;
 
 namespace Workboard.Web.Controllers;
@@ -11,6 +12,7 @@ public class HomeController : Controller
         return View();
     }
 
+    [AllowAnonymous, IgnoreAntiforgeryToken]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {
@@ -19,6 +21,7 @@ public class HomeController : Controller
     }
 
     [Route("Home/Status/{statusCode:int}")]
+    [AllowAnonymous, IgnoreAntiforgeryToken]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Status(int statusCode)
     {

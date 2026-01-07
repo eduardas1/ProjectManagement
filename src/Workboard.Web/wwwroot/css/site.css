@@ -5,3 +5,8 @@ main {
 code {
     overflow-wrap: anywhere;
 }
+
+.navbar-text {
+    max-width: 260px;
+    overflow-wrap: anywhere;
+}

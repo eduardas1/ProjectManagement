@@ -1,0 +1,33 @@
+@model IReadOnlyList<Workboard.Application.Projects.ProjectSummary>
+@{
+    var archived = (bool?)ViewData["Archived"] ?? false;
+    ViewData["Title"] = archived ? "Archived projects" : "Projects";
+}
+
+<h1>@ViewData["Title"]</h1>
+<p>
+    <a asp-action="Create" class="btn btn-primary">Create project</a>
+    <a asp-action="Index" asp-route-archived="@(!archived)">@(archived ? "Active projects" : "Archived projects")</a>
+</p>
+@if (Model.Count == 0)
+{
+    <p>No @(archived ? "archived" : "active") projects.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead><tr><th>Key</th><th>Name</th><th>Your role</th></tr></thead>
+            <tbody>
+                @foreach (var project in Model)
+                {
+                    <tr>
+                        <td><a asp-action="Details" asp-route-id="@project.Id">@project.Key</a></td>
+                        <td class="project-text">@project.Name</td>
+                        <td>@(project.IsOwner ? "Owner" : "Member")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

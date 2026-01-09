@@ -1,0 +1,44 @@
+@model Workboard.Application.Projects.ProjectDetails
+@{
+    ViewData["Title"] = Model.Key;
+}
+
+<h1 class="project-text">@Model.Key - @Model.Name</h1>
+@if (Model.IsArchived)
+{
+    <div class="alert alert-info">This project is archived.</div>
+}
+<p class="project-text">Owner: @Model.Owner</p>
+<p>
+    <a asp-action="Index" asp-route-archived="@Model.IsArchived">Back to projects</a>
+    @if (Model.IsOwner)
+    {
+        <a asp-controller="Members" asp-action="Index" asp-route-id="@Model.Id" class="btn btn-default">Members</a>
+        @if (!Model.IsArchived)
+        {
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-default">Edit project</a>
+        }
+        <a asp-action="Archive" asp-route-id="@Model.Id" class="btn btn-default">@(Model.IsArchived ? "Restore project" : "Archive project")</a>
+    }
+</p>
+<h2>Description</h2>
+@if (string.IsNullOrWhiteSpace(Model.Description))
+{
+    <p>No description.</p>
+}
+else
+{
+    <div class="project-description">@Model.Description</div>
+}
+<h2>Recent changes</h2>
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead><tr><th>Time (UTC)</th><th>Account</th><th>Change</th></tr></thead>
+        <tbody>
+            @foreach (var change in Model.History)
+            {
+                <tr><td>@change.OccurredAtUtc.ToString("yyyy-MM-dd HH:mm")</td><td>@change.Actor</td><td>@change.Summary</td></tr>
+            }
+        </tbody>
+    </table>
+</div>

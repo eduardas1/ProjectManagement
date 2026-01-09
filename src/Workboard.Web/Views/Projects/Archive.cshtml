@@ -1,0 +1,17 @@
+@model ArchiveProjectViewModel
+@{
+    var action = Model.IsArchived ? "Archive" : "Restore";
+    ViewData["Title"] = action + " project";
+}
+
+<h1>@action @Model.Key</h1>
+<p class="project-text">@Model.Name</p>
+<p>@(Model.IsArchived ? "Archived projects remain available to their members as read-only." : "This project will return to the active project list.")</p>
+<form asp-action="Archive" asp-route-id="@Model.ProjectId" method="post">
+    <input asp-for="ProjectId" type="hidden" />
+    <input asp-for="ExpectedVersion" type="hidden" />
+    <input asp-for="IsArchived" type="hidden" />
+    <div asp-validation-summary="All" class="text-danger"></div>
+    <button type="submit" class="btn btn-warning">@action project</button>
+    <a asp-action="Details" asp-route-id="@Model.ProjectId" class="btn btn-default">Cancel</a>
+</form>

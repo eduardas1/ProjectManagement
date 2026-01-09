@@ -23,6 +23,10 @@
             <div class="collapse navbar-collapse" id="navigation">
                 <ul class="nav navbar-nav">
                     <li><a asp-controller="Home" asp-action="Index">Home</a></li>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <li><a asp-controller="Projects" asp-action="Index">Projects</a></li>
+                    }
                 </ul>
                 @if (User.Identity?.IsAuthenticated == true)
                 {
@@ -43,7 +47,7 @@
         </div>
     </nav>
     <main class="container">
-        @if (TempData["Success"] is string success)
+        @if (TempData["Success"] is string success && Context.Response.StatusCode < 400)
         {
             <div class="alert alert-success" role="status">@success</div>
         }

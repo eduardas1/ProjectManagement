@@ -10,3 +10,12 @@ code {
     max-width: 260px;
     overflow-wrap: anywhere;
 }
+
+.project-text {
+    overflow-wrap: anywhere;
+}
+
+.project-description {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}

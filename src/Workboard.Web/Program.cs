@@ -2,11 +2,17 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Workboard.Infrastructure;
 using Workboard.Infrastructure.Data;
+using Workboard.Application.Interfaces;
+using Workboard.Application.Projects;
+using Workboard.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 var storageDirectory = Path.GetFullPath(builder.Configuration["Storage:Directory"] ?? "App_Data",
     builder.Environment.ContentRootPath);
 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+builder.Services.AddMediatR(options => options.RegisterServicesFromAssemblyContaining<CreateProjectCommand>());
 builder.Services.AddInfrastructure(storageDirectory);
 builder.Services.AddControllersWithViews(options =>
     options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));

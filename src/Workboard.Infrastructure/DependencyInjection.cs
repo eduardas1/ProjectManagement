@@ -4,6 +4,8 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Workboard.Infrastructure.Data;
+using Workboard.Infrastructure.Repositories;
+using Workboard.Application.Interfaces;
 
 namespace Workboard.Infrastructure;
 
@@ -31,6 +33,10 @@ public static class DependencyInjection
             options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
         }).AddEntityFrameworkStores<ApplicationDbContext>();
 
+        services.AddScoped<IProjectRepository, ProjectRepository>();
+        services.AddScoped<IProjectAccess, ProjectAccess>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddSingleton(TimeProvider.System);
         return services;
     }
 }

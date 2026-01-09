@@ -6,6 +6,7 @@ COPY src/Workboard.Domain/Workboard.Domain.csproj src/Workboard.Domain/packages.
 COPY src/Workboard.Application/Workboard.Application.csproj src/Workboard.Application/packages.lock.json src/Workboard.Application/
 COPY src/Workboard.Infrastructure/Workboard.Infrastructure.csproj src/Workboard.Infrastructure/packages.lock.json src/Workboard.Infrastructure/
 COPY src/Workboard.Web/Workboard.Web.csproj src/Workboard.Web/packages.lock.json src/Workboard.Web/
+COPY tests/Workboard.Tests/Workboard.Tests.csproj tests/Workboard.Tests/packages.lock.json tests/Workboard.Tests/
 RUN dotnet restore Workboard.sln --locked-mode
 
 COPY . .

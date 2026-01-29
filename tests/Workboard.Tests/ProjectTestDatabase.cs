@@ -49,6 +49,7 @@ internal record TestUser(string UserId) : ICurrentUser;
 
 internal class ProjectSession(ApplicationDbContext context, TestUser user) : IAsyncDisposable
 {
+    protected TestUser User => user;
     public ApplicationDbContext Context => context;
     public ProjectRepository Repository => new(context);
     public ProjectAccess Access => new(context, user);
@@ -57,7 +58,7 @@ internal class ProjectSession(ApplicationDbContext context, TestUser user) : IAs
     public UpdateProjectHandler Update => new(Repository, Access, Unit, user, TimeProvider.System);
     public SetProjectArchiveHandler Archive => new(Repository, Access, Unit, user, TimeProvider.System);
     public AddProjectMemberHandler AddMember => new(Repository, Access, Unit, user, TimeProvider.System);
-    public RemoveProjectMemberHandler RemoveMember => new(Repository, Access, Unit, user, TimeProvider.System);
+    public RemoveProjectMemberHandler RemoveMember => new(Repository, Access, Unit, user, TimeProvider.System, new WorkItemRepository(context));
     public TransferProjectOwnershipHandler Transfer => new(Repository, Access, Unit, user, TimeProvider.System);
     public ValueTask DisposeAsync() => context.DisposeAsync();
 }

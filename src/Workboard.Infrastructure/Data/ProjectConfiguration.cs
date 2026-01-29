@@ -53,6 +53,9 @@ public class ChangeEventConfiguration : IEntityTypeConfiguration<ChangeEvent>
         builder.HasOne<Project>().WithMany().HasForeignKey(change => change.ProjectId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<IdentityUser>().WithMany().HasForeignKey(change => change.ActorId).OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(change => new { change.ProjectId, change.OccurredAtUtc, change.Id });
+        builder.HasOne<WorkItem>().WithMany().HasForeignKey(change => new { change.ProjectId, change.WorkItemId })
+            .HasPrincipalKey(work => new { work.ProjectId, work.Id }).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(change => new { change.ProjectId, change.WorkItemId, change.OccurredAtUtc, change.Id });
         builder.Property(change => change.OccurredAtUtc).HasConversion(
             value => value.ToUniversalTime(), value => DateTime.SpecifyKind(value, DateTimeKind.Utc));
     }

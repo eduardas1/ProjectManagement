@@ -239,13 +239,56 @@ namespace Workboard.Infrastructure.Data.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("WorkItemId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ActorId");
 
                     b.HasIndex("ProjectId", "OccurredAtUtc", "Id");
 
+                    b.HasIndex("ProjectId", "WorkItemId", "OccurredAtUtc", "Id");
+
                     b.ToTable("ChangeEvents", (string)null);
+                });
+
+            modelBuilder.Entity("Workboard.Domain.Entities.Label", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId", "NormalizedName")
+                        .IsUnique();
+
+                    b.ToTable("Labels", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Label_Name", "length(trim(Name)) BETWEEN 1 AND 40");
+
+                            t.HasCheckConstraint("CK_Label_NormalizedName", "length(NormalizedName) BETWEEN 1 AND 40");
+
+                            t.HasCheckConstraint("CK_Label_Version", "Version > 0");
+                        });
                 });
 
             modelBuilder.Entity("Workboard.Domain.Entities.Project", b =>
@@ -328,6 +371,175 @@ namespace Workboard.Infrastructure.Data.Migrations
                     b.ToTable("ProjectMembers", (string)null);
                 });
 
+            modelBuilder.Entity("Workboard.Domain.Entities.WorkItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AssigneeId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedById")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(20000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("DueDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("EpicId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Number")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssigneeId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("ProjectId", "EpicId");
+
+                    b.HasIndex("ProjectId", "Number")
+                        .IsUnique();
+
+                    b.HasIndex("ProjectId", "ParentId");
+
+                    b.HasIndex("ProjectId", "IsArchived", "AssigneeId", "Id");
+
+                    b.HasIndex("ProjectId", "IsArchived", "DueDate", "Id");
+
+                    b.HasIndex("ProjectId", "IsArchived", "Status", "Id");
+
+                    b.ToTable("WorkItems", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Work_Description", "length(Description) <= 20000");
+
+                            t.HasCheckConstraint("CK_Work_Hierarchy", "(Type = 'Subtask' AND ParentId IS NOT NULL AND EpicId IS NULL) OR (Type IN ('Bug', 'Task', 'Story') AND ParentId IS NULL) OR (Type = 'Epic' AND ParentId IS NULL AND EpicId IS NULL)");
+
+                            t.HasCheckConstraint("CK_Work_Number", "Number > 0");
+
+                            t.HasCheckConstraint("CK_Work_Priority", "Priority IN ('Low', 'Medium', 'High', 'Critical')");
+
+                            t.HasCheckConstraint("CK_Work_Self", "(ParentId IS NULL OR ParentId <> Id) AND (EpicId IS NULL OR EpicId <> Id)");
+
+                            t.HasCheckConstraint("CK_Work_Status", "Status IN ('Backlog', 'Todo', 'InProgress', 'InReview', 'Done', 'Cancelled')");
+
+                            t.HasCheckConstraint("CK_Work_Title", "length(trim(Title)) BETWEEN 1 AND 200");
+
+                            t.HasCheckConstraint("CK_Work_Type", "Type IN ('Bug', 'Task', 'Story', 'Epic', 'Subtask')");
+
+                            t.HasCheckConstraint("CK_Work_Version", "Version > 0");
+                        });
+                });
+
+            modelBuilder.Entity("Workboard.Domain.Entities.WorkItemLabel", b =>
+                {
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("WorkItemId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("LabelId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ProjectId", "WorkItemId", "LabelId");
+
+                    b.HasIndex("ProjectId", "LabelId", "WorkItemId");
+
+                    b.ToTable("WorkItemLabels", (string)null);
+                });
+
+            modelBuilder.Entity("Workboard.Domain.Entities.WorkItemLink", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedById")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SourceId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TargetId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("ProjectId", "SourceId")
+                        .IsUnique()
+                        .HasFilter("Kind = 'Duplicates'");
+
+                    b.HasIndex("ProjectId", "TargetId");
+
+                    b.HasIndex("ProjectId", "SourceId", "TargetId", "Kind")
+                        .IsUnique();
+
+                    b.ToTable("WorkItemLinks", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Link_Kind", "Kind IN ('Blocks', 'Duplicates')");
+
+                            t.HasCheckConstraint("CK_Link_Self", "SourceId <> TargetId");
+                        });
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -392,6 +604,21 @@ namespace Workboard.Infrastructure.Data.Migrations
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("Workboard.Domain.Entities.WorkItem", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "WorkItemId")
+                        .HasPrincipalKey("ProjectId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("Workboard.Domain.Entities.Label", b =>
+                {
+                    b.HasOne("Workboard.Domain.Entities.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Workboard.Domain.Entities.Project", b =>
@@ -414,6 +641,78 @@ namespace Workboard.Infrastructure.Data.Migrations
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Workboard.Domain.Entities.WorkItem", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                        .WithMany()
+                        .HasForeignKey("AssigneeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Workboard.Domain.Entities.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Workboard.Domain.Entities.WorkItem", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "EpicId")
+                        .HasPrincipalKey("ProjectId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Workboard.Domain.Entities.WorkItem", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "ParentId")
+                        .HasPrincipalKey("ProjectId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("Workboard.Domain.Entities.WorkItemLabel", b =>
+                {
+                    b.HasOne("Workboard.Domain.Entities.Label", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "LabelId")
+                        .HasPrincipalKey("ProjectId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Workboard.Domain.Entities.WorkItem", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "WorkItemId")
+                        .HasPrincipalKey("ProjectId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Workboard.Domain.Entities.WorkItemLink", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Workboard.Domain.Entities.WorkItem", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "SourceId")
+                        .HasPrincipalKey("ProjectId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Workboard.Domain.Entities.WorkItem", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "TargetId")
+                        .HasPrincipalKey("ProjectId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

@@ -6,6 +6,8 @@
 <p><a asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-archived="@Model.Item.IsArchived">Back to work</a>
 @if (!Model.Project.IsArchived && !Model.Item.IsArchived)
 { <a asp-action="Edit" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id" class="btn btn-default">Edit work item</a> }
+@if (Model.Project.IsOwner && !Model.Project.IsArchived)
+{ <a asp-action="Archive" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id" class="btn btn-default">@(Model.Item.IsArchived ? "Restore work item" : "Archive work item")</a> }
 </p>
 <dl class="dl-horizontal">
     <dt>Type</dt><dd>@Model.Item.Type</dd><dt>Status</dt><dd>@Model.Item.Status</dd><dt>Priority</dt><dd>@Model.Item.Priority</dd>
@@ -18,6 +20,8 @@
 @if (string.IsNullOrWhiteSpace(Model.Item.Description)) { <p>No description.</p> }
 else { <div class="project-description">@Model.Item.Description</div> }
 <h2>Hierarchy</h2>
+@if (!Model.Project.IsArchived && !Model.Item.IsArchived && Model.Item.Type != WorkItemType.Epic)
+{ <p><a asp-action="Hierarchy" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id">Change hierarchy</a></p> }
 @if (Model.Parent != null)
 { <p class="project-text">Parent: <a asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Parent.Id">@Model.Project.Key-@Model.Parent.Number @Model.Parent.Title</a> @(Model.Parent.IsArchived ? "(archived)" : "")</p> }
 @if (Model.Epic != null)
@@ -28,12 +32,17 @@ else { <div class="project-description">@Model.Item.Description</div> }
     { <li class="project-text"><a asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@item.Id">@Model.Project.Key-@item.Number @item.Title</a> @(item.IsArchived ? "(archived)" : "")</li> }
 </ul> }
 <h2>Relationships</h2>
+@if (!Model.Project.IsArchived && !Model.Item.IsArchived)
+{ <p><a asp-action="AddLink" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id">Add relationship</a></p> }
 @if (Model.Connections.Count == 0) { <p>No relationships.</p> }
 else
 { <ul>@foreach (var link in Model.Connections)
     {
         var direction = link.Kind == WorkItemLinkKind.Blocks ? (link.IsOutgoing ? "Blocks" : "Is blocked by") : (link.IsOutgoing ? "Duplicates" : "Is duplicated by");
-        <li class="project-text">@direction <a asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@link.TargetId">@Model.Project.Key-@link.Number @link.Title</a> @(link.IsArchived ? "(archived)" : "")</li>
+        <li class="project-text">@direction <a asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@link.TargetId">@Model.Project.Key-@link.Number @link.Title</a> @(link.IsArchived ? "(archived)" : "")
+        @if (link.IsOutgoing && !Model.Project.IsArchived && !Model.Item.IsArchived && !link.IsArchived)
+        { <a asp-action="RemoveLink" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id" asp-route-targetId="@link.TargetId" asp-route-kind="@link.Kind">Remove</a> }
+        </li>
     }</ul> }
 <h2>Recent changes</h2>
 <div class="table-responsive"><table class="table table-striped">

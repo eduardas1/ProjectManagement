@@ -97,6 +97,150 @@ public class WorkItemsController(ISender sender) : Controller
         return View(model);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> Hierarchy([FromQuery] int projectId, [FromRoute] int id, CancellationToken cancellationToken)
+    {
+        var details = await sender.Send(new GetWorkItemQuery(projectId, id), cancellationToken);
+        if (details == null) return NotFound();
+        if (details.Project.IsArchived || details.Item.IsArchived || details.Item.Type == Workboard.Domain.Enums.WorkItemType.Epic)
+            return RedirectToAction(nameof(Details), new { projectId, id });
+        var options = await sender.Send(new GetWorkItemOptionsQuery(projectId), cancellationToken);
+        if (options == null) return NotFound();
+        return View(new WorkItemHierarchyViewModel { ProjectId = projectId, WorkItemId = id, ExpectedVersion = details.Item.Version,
+            ParentId = details.Item.ParentId, EpicId = details.Item.EpicId, Details = details, Options = options });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Hierarchy([FromQuery] int projectId, [FromRoute] int id, WorkItemHierarchyViewModel model, CancellationToken cancellationToken)
+    {
+        if (projectId != model.ProjectId || id != model.WorkItemId) return NotFound();
+        var details = await sender.Send(new GetWorkItemQuery(projectId, id), cancellationToken);
+        if (details == null) return NotFound();
+        var options = await sender.Send(new GetWorkItemOptionsQuery(projectId), cancellationToken);
+        if (options == null) return NotFound();
+        model.Details = details; model.Options = options;
+        if (ModelState.IsValid)
+        {
+            var result = await sender.Send(new ChangeWorkItemHierarchyCommand(projectId, id, model.ExpectedVersion, model.ParentId, model.EpicId), cancellationToken);
+            if (result.Status == OperationStatus.NotFound) return NotFound();
+            if (result.Status == OperationStatus.Success)
+            {
+                TempData["Success"] = "Work hierarchy saved.";
+                return RedirectToAction(nameof(Details), new { projectId, id });
+            }
+            ApplyError(result);
+        }
+        else Response.StatusCode = StatusCodes.Status400BadRequest;
+        return View(model);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AddLink([FromQuery] int projectId, [FromRoute] int id, CancellationToken cancellationToken)
+    {
+        var details = await sender.Send(new GetWorkItemQuery(projectId, id), cancellationToken);
+        if (details == null) return NotFound();
+        if (details.Project.IsArchived || details.Item.IsArchived) return RedirectToAction(nameof(Details), new { projectId, id });
+        var options = await sender.Send(new GetWorkItemOptionsQuery(projectId), cancellationToken);
+        if (options == null) return NotFound();
+        return View(new WorkItemLinkViewModel { ProjectId = projectId, WorkItemId = id, ExpectedVersion = details.Item.Version,
+            Details = details, Options = options });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AddLink([FromQuery] int projectId, [FromRoute] int id, WorkItemLinkViewModel model, CancellationToken cancellationToken)
+    {
+        if (projectId != model.ProjectId || id != model.WorkItemId) return NotFound();
+        var details = await sender.Send(new GetWorkItemQuery(projectId, id), cancellationToken);
+        if (details == null) return NotFound();
+        var options = await sender.Send(new GetWorkItemOptionsQuery(projectId), cancellationToken);
+        if (options == null) return NotFound();
+        model.Details = details; model.Options = options;
+        if (ModelState.IsValid)
+        {
+            var result = await sender.Send(new AddWorkItemLinkCommand(projectId, id, model.ExpectedVersion, model.TargetId, model.Kind), cancellationToken);
+            if (result.Status == OperationStatus.NotFound) return NotFound();
+            if (result.Status == OperationStatus.Success)
+            {
+                TempData["Success"] = "Relationship added.";
+                return RedirectToAction(nameof(Details), new { projectId, id });
+            }
+            ApplyError(result);
+        }
+        else Response.StatusCode = StatusCodes.Status400BadRequest;
+        return View(model);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> RemoveLink([FromQuery] int projectId, [FromRoute] int id,
+        [FromQuery] int targetId, [FromQuery] Workboard.Domain.Enums.WorkItemLinkKind kind, CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid || !Enum.IsDefined(kind)) return NotFound();
+        var details = await sender.Send(new GetWorkItemQuery(projectId, id), cancellationToken);
+        if (details == null) return NotFound();
+        var link = details.Connections.SingleOrDefault(link => link.IsOutgoing && link.TargetId == targetId && link.Kind == kind);
+        if (link == null) return NotFound();
+        if (details.Project.IsArchived || details.Item.IsArchived || link.IsArchived)
+            return RedirectToAction(nameof(Details), new { projectId, id });
+        return View(new WorkItemLinkViewModel { ProjectId = projectId, WorkItemId = id, ExpectedVersion = details.Item.Version,
+            TargetId = targetId, Kind = kind, TargetName = $"{details.Project.Key}-{link.Number} {link.Title}", Details = details });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> RemoveLink([FromQuery] int projectId, [FromRoute] int id, WorkItemLinkViewModel model, CancellationToken cancellationToken)
+    {
+        if (projectId != model.ProjectId || id != model.WorkItemId) return NotFound();
+        var details = await sender.Send(new GetWorkItemQuery(projectId, id), cancellationToken);
+        if (details == null) return NotFound();
+        var target = await sender.Send(new GetWorkItemQuery(projectId, model.TargetId), cancellationToken);
+        model.Details = details;
+        model.TargetName = target == null ? "Selected work item" : $"{target.Project.Key}-{target.Item.Number} {target.Item.Title}";
+        if (ModelState.IsValid)
+        {
+            var result = await sender.Send(new RemoveWorkItemLinkCommand(projectId, id, model.ExpectedVersion, model.TargetId, model.Kind), cancellationToken);
+            if (result.Status == OperationStatus.NotFound) return NotFound();
+            if (result.Status == OperationStatus.Success)
+            {
+                TempData["Success"] = "Relationship removed.";
+                return RedirectToAction(nameof(Details), new { projectId, id });
+            }
+            ApplyError(result);
+        }
+        else Response.StatusCode = StatusCodes.Status400BadRequest;
+        return View(model);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Archive([FromQuery] int projectId, [FromRoute] int id, CancellationToken cancellationToken)
+    {
+        var details = await sender.Send(new GetWorkItemQuery(projectId, id), cancellationToken);
+        if (details == null || !details.Project.IsOwner) return NotFound();
+        if (details.Project.IsArchived) return RedirectToAction(nameof(Details), new { projectId, id });
+        return View(new WorkItemArchiveViewModel { ProjectId = projectId, WorkItemId = id, ExpectedVersion = details.Item.Version,
+            IsArchived = !details.Item.IsArchived, Details = details });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Archive([FromQuery] int projectId, [FromRoute] int id, WorkItemArchiveViewModel model, CancellationToken cancellationToken)
+    {
+        if (projectId != model.ProjectId || id != model.WorkItemId) return NotFound();
+        var details = await sender.Send(new GetWorkItemQuery(projectId, id), cancellationToken);
+        if (details == null || !details.Project.IsOwner) return NotFound();
+        model.Details = details;
+        if (ModelState.IsValid)
+        {
+            var result = await sender.Send(new SetWorkItemArchiveCommand(projectId, id, model.ExpectedVersion, model.IsArchived), cancellationToken);
+            if (result.Status == OperationStatus.NotFound) return NotFound();
+            if (result.Status == OperationStatus.Success)
+            {
+                TempData["Success"] = model.IsArchived ? "Work item archived." : "Work item restored.";
+                return RedirectToAction(nameof(Details), new { projectId, id });
+            }
+            ApplyError(result);
+        }
+        else Response.StatusCode = StatusCodes.Status400BadRequest;
+        return View(model);
+    }
+
     private void ApplyError(OperationResult<int> result)
     {
         Response.StatusCode = result.Status switch

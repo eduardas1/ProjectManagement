@@ -22,7 +22,12 @@
     <span asp-validation-for="DueDate" class="text-danger"></span>
 </div>
 <div class="form-group">
-    <label asp-for="LabelIds">Labels</label><select asp-for="LabelIds" asp-items="@(new SelectList(Model.Options.Labels, "Id", "Name"))" class="form-control" size="5"></select>
+    <label asp-for="LabelIds">Labels</label>
+    @if (Model.Options.Labels.Count == 0) { <p class="form-control-static">No project labels.</p> }
+    else
+    {
+        <select asp-for="LabelIds" asp-items="@(new SelectList(Model.Options.Labels, "Id", "Name"))" class="form-control" size="5"></select>
+        <p class="help-block">Choose any project labels. Leave empty for no labels.</p>
+    }
     <span asp-validation-for="LabelIds" class="text-danger"></span>
-    <p class="help-block">Choose any project labels. Leave empty for no labels.</p>
 </div>

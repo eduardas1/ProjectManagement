@@ -1,0 +1,13 @@
+@model DeleteLabelViewModel
+@{ ViewData["Title"] = "Delete label"; }
+<h1>Delete label</h1>
+<p class="project-text">@Model.Project.Key: @Model.Name</p>
+@if (Model.UsageCount > 0)
+{ <div class="alert alert-info">Remove this label from its @Model.UsageCount work items before deleting it.</div> }
+<form asp-action="Delete" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.LabelId" method="post">
+    <input asp-for="ProjectId" type="hidden" /><input asp-for="LabelId" type="hidden" /><input asp-for="ExpectedVersion" type="hidden" />
+    <div asp-validation-summary="All" class="text-danger"></div>
+    @if (Model.UsageCount == 0) { <button type="submit" class="btn btn-danger">Delete label</button> }
+    <a asp-action="Index" asp-route-projectId="@Model.ProjectId" class="btn btn-default">Cancel</a>
+    <a asp-action="Delete" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.LabelId">Reload current version</a>
+</form>

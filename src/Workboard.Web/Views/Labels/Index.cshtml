@@ -1,0 +1,25 @@
+@model Workboard.Application.WorkItems.ProjectLabels
+@{ ViewData["Title"] = Model.Project.Key + " labels"; }
+<h1 class="project-text">@Model.Project.Key labels</h1>
+@if (Model.Project.IsArchived) { <div class="alert alert-info">This project is archived.</div> }
+<p><a asp-controller="WorkItems" asp-action="Index" asp-route-projectId="@Model.Project.Id">Back to work</a>
+@if (!Model.Project.IsArchived) { <a asp-action="Create" asp-route-projectId="@Model.Project.Id" class="btn btn-primary">Create label</a> }
+</p>
+@if (Model.Items.Count == 0) { <p>No project labels.</p> }
+else
+{
+    <div class="table-responsive"><table class="table table-striped">
+        <thead><tr><th>Name</th><th>Work items</th><th>Actions</th></tr></thead>
+        <tbody>@foreach (var label in Model.Items)
+        {
+            <tr><td class="project-text">@label.Name</td><td>@label.UsageCount</td><td>
+            @if (!Model.Project.IsArchived)
+            {
+                <a asp-action="Rename" asp-route-projectId="@Model.Project.Id" asp-route-id="@label.Id">Rename</a>
+                @if (Model.Project.IsOwner && label.UsageCount == 0)
+                { <a asp-action="Delete" asp-route-projectId="@Model.Project.Id" asp-route-id="@label.Id">Delete</a> }
+            }
+            </td></tr>
+        }</tbody>
+    </table></div>
+}

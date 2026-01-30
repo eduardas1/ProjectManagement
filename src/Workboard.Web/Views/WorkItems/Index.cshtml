@@ -5,6 +5,7 @@
 <p>
     <a asp-controller="Projects" asp-action="Details" asp-route-id="@Model.Project.Id">Back to project</a>
     @if (!Model.Project.IsArchived) { <a asp-action="Create" asp-route-projectId="@Model.Project.Id" class="btn btn-primary">Create work item</a> }
+    <a asp-controller="Labels" asp-action="Index" asp-route-projectId="@Model.Project.Id" class="btn btn-default">Labels</a>
     <a asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-archived="@(!Model.Archived)" class="btn btn-default">@(Model.Archived ? "Active work" : "Archived work")</a>
 </p>
 <h2>@(Model.Archived ? "Archived work" : "Active work")</h2>

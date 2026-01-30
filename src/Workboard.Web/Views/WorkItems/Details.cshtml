@@ -1,0 +1,44 @@
+@using Workboard.Domain.Enums
+@model Workboard.Application.WorkItems.WorkItemDetails
+@{ ViewData["Title"] = Model.Project.Key + "-" + Model.Item.Number; }
+<h1 class="project-text">@Model.Project.Key-@Model.Item.Number @Model.Item.Title</h1>
+@if (Model.Project.IsArchived || Model.Item.IsArchived) { <div class="alert alert-info">This @(Model.Project.IsArchived ? "project" : "work item") is archived.</div> }
+<p><a asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-archived="@Model.Item.IsArchived">Back to work</a>
+@if (!Model.Project.IsArchived && !Model.Item.IsArchived)
+{ <a asp-action="Edit" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id" class="btn btn-default">Edit work item</a> }
+</p>
+<dl class="dl-horizontal">
+    <dt>Type</dt><dd>@Model.Item.Type</dd><dt>Status</dt><dd>@Model.Item.Status</dd><dt>Priority</dt><dd>@Model.Item.Priority</dd>
+    <dt>Assignee</dt><dd class="project-text">@(Model.Assignee ?? "Unassigned")</dd><dt>Due date</dt><dd>@(Model.Item.DueDate?.ToString("yyyy-MM-dd") ?? "None")</dd>
+    <dt>Created by</dt><dd class="project-text">@Model.Creator</dd><dt>Created (UTC)</dt><dd>@Model.Item.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm")</dd>
+    <dt>Updated (UTC)</dt><dd>@Model.Item.UpdatedAtUtc.ToString("yyyy-MM-dd HH:mm")</dd>
+    <dt>Labels</dt><dd>@(Model.Labels.Count == 0 ? "None" : string.Join(", ", Model.Labels.Select(label => label.Name)))</dd>
+</dl>
+<h2>Description</h2>
+@if (string.IsNullOrWhiteSpace(Model.Item.Description)) { <p>No description.</p> }
+else { <div class="project-description">@Model.Item.Description</div> }
+<h2>Hierarchy</h2>
+@if (Model.Parent != null)
+{ <p class="project-text">Parent: <a asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Parent.Id">@Model.Project.Key-@Model.Parent.Number @Model.Parent.Title</a> @(Model.Parent.IsArchived ? "(archived)" : "")</p> }
+@if (Model.Epic != null)
+{ <p class="project-text">Epic: <a asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Epic.Id">@Model.Project.Key-@Model.Epic.Number @Model.Epic.Title</a> @(Model.Epic.IsArchived ? "(archived)" : "")</p> }
+@if (Model.Parent == null && Model.Epic == null) { <p>No parent or Epic.</p> }
+@if (Model.Children.Count > 0)
+{ <ul>@foreach (var item in Model.Children)
+    { <li class="project-text"><a asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@item.Id">@Model.Project.Key-@item.Number @item.Title</a> @(item.IsArchived ? "(archived)" : "")</li> }
+</ul> }
+<h2>Relationships</h2>
+@if (Model.Connections.Count == 0) { <p>No relationships.</p> }
+else
+{ <ul>@foreach (var link in Model.Connections)
+    {
+        var direction = link.Kind == WorkItemLinkKind.Blocks ? (link.IsOutgoing ? "Blocks" : "Is blocked by") : (link.IsOutgoing ? "Duplicates" : "Is duplicated by");
+        <li class="project-text">@direction <a asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@link.TargetId">@Model.Project.Key-@link.Number @link.Title</a> @(link.IsArchived ? "(archived)" : "")</li>
+    }</ul> }
+<h2>Recent changes</h2>
+<div class="table-responsive"><table class="table table-striped">
+    <thead><tr><th>Time (UTC)</th><th>Account</th><th>Change</th></tr></thead>
+    <tbody>@foreach (var change in Model.History)
+    { <tr><td>@change.OccurredAtUtc.ToString("yyyy-MM-dd HH:mm")</td><td>@change.Actor</td><td>@change.Summary</td></tr> }
+    </tbody>
+</table></div>

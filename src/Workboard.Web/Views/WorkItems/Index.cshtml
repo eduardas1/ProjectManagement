@@ -1,0 +1,29 @@
+@model Workboard.Application.WorkItems.WorkItemList
+@{ ViewData["Title"] = Model.Project.Key + " work"; }
+<h1 class="project-text">@Model.Project.Key work</h1>
+@if (Model.Project.IsArchived) { <div class="alert alert-info">This project is archived.</div> }
+<p>
+    <a asp-controller="Projects" asp-action="Details" asp-route-id="@Model.Project.Id">Back to project</a>
+    @if (!Model.Project.IsArchived) { <a asp-action="Create" asp-route-projectId="@Model.Project.Id" class="btn btn-primary">Create work item</a> }
+    <a asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-archived="@(!Model.Archived)" class="btn btn-default">@(Model.Archived ? "Active work" : "Archived work")</a>
+</p>
+<h2>@(Model.Archived ? "Archived work" : "Active work")</h2>
+@if (Model.Total == 0) { <p>No work items.</p> }
+else
+{
+    <div class="table-responsive"><table class="table table-striped">
+        <thead><tr><th>Key</th><th>Title</th><th>Type</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Due date</th></tr></thead>
+        <tbody>
+        @foreach (var work in Model.Items)
+        {
+            <tr><td><a asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@work.Id">@Model.Project.Key-@work.Number</a></td>
+                <td class="project-text">@work.Title</td><td>@work.Type</td><td>@work.Status</td><td>@work.Priority</td><td>@(work.Assignee ?? "Unassigned")</td><td>@(work.DueDate?.ToString("yyyy-MM-dd") ?? "None")</td></tr>
+        }
+        </tbody>
+    </table></div>
+    <p>Page @Model.Page of @Model.PageCount (@Model.Total items)</p>
+    <nav aria-label="Work item pages"><ul class="pager">
+        @if (Model.Page > 1) { <li><a asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-archived="@Model.Archived" asp-route-page="@(Model.Page - 1)">Previous</a></li> }
+        @if (Model.Page < Model.PageCount) { <li><a asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-archived="@Model.Archived" asp-route-page="@(Model.Page + 1)">Next</a></li> }
+    </ul></nav>
+}

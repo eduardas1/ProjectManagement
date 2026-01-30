@@ -49,7 +49,7 @@ public class UpdateWorkItemHandler(IWorkItemRepository repository, IProjectRepos
                 repository.AddLabel(new WorkItemLabel { ProjectId = project.Id, WorkItemId = work.Id, LabelId = labelId });
             var now = timeProvider.GetUtcNow().UtcDateTime;
             WorkItemChanges.Touch(work, now);
-            WorkItemChanges.Record(projects, work, currentUser.UserId, now, "WorkUpdated", "Work item updated.",
+            WorkItemChanges.Record(projects, work, currentUser.UserId, now, "WorkUpdated", "Updated " + string.Join(", ", changed) + ".",
                 new { Fields = changed, Previous = previous, Current = new { work.Title, work.Priority, work.AssigneeId, work.DueDate, LabelIds = labelIds.Order().ToArray() } });
             await unitOfWork.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);

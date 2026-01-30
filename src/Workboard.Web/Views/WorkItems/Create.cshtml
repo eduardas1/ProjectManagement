@@ -1,0 +1,34 @@
+@using Workboard.Domain.Enums
+@model CreateWorkItemViewModel
+@{ ViewData["Title"] = "Create work item"; }
+<h1>Create work in @Model.Options.Project.Key</h1>
+<div class="row"><div class="col-md-8">
+<form asp-action="Create" asp-route-projectId="@Model.ProjectId" method="post">
+    <input asp-for="ProjectId" type="hidden" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="form-group">
+        <label asp-for="Type"></label><select asp-for="Type" asp-items="Html.GetEnumSelectList<WorkItemType>()" class="form-control"></select>
+        <span asp-validation-for="Type" class="text-danger"></span>
+    </div>
+    <partial name="_Fields" model="Model" />
+    <div class="form-group">
+        <label asp-for="ParentId">Parent (Subtask only)</label>
+        <select asp-for="ParentId" class="form-control"><option value="">None</option>
+        @foreach (var item in Model.Options.Items.Where(item => item.Type is WorkItemType.Bug or WorkItemType.Task or WorkItemType.Story))
+        { <option value="@item.Id">@Model.Options.Project.Key-@item.Number @item.Title</option> }
+        </select>
+        <span asp-validation-for="ParentId" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="EpicId">Epic (Bug, Task or Story only)</label>
+        <select asp-for="EpicId" class="form-control"><option value="">None</option>
+        @foreach (var item in Model.Options.Items.Where(item => item.Type == WorkItemType.Epic))
+        { <option value="@item.Id">@Model.Options.Project.Key-@item.Number @item.Title</option> }
+        </select>
+        <span asp-validation-for="EpicId" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-primary">Create work item</button>
+    <a asp-action="Index" asp-route-projectId="@Model.ProjectId" class="btn btn-default">Cancel</a>
+</form>
+</div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

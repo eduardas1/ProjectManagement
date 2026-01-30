@@ -11,6 +11,7 @@
 <p class="project-text">Owner: @Model.Owner</p>
 <p>
     <a asp-action="Index" asp-route-archived="@Model.IsArchived">Back to projects</a>
+    <a asp-controller="WorkItems" asp-action="Index" asp-route-projectId="@Model.Id" class="btn btn-default">Work items</a>
     @if (Model.IsOwner)
     {
         <a asp-controller="Members" asp-action="Index" asp-route-id="@Model.Id" class="btn btn-default">Members</a>

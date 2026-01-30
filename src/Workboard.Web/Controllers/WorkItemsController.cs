@@ -1,0 +1,111 @@
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using Workboard.Application.Common;
+using Workboard.Application.WorkItems;
+using Workboard.Web.Models;
+
+namespace Workboard.Web.Controllers;
+
+public class WorkItemsController(ISender sender) : Controller
+{
+    [HttpGet]
+    public async Task<IActionResult> Index([FromQuery] int projectId, bool archived = false, int page = 1, CancellationToken cancellationToken = default)
+    {
+        var list = await sender.Send(new ListWorkItemsQuery(projectId, archived, page), cancellationToken);
+        return list == null ? NotFound() : View(list);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Details([FromQuery] int projectId, [FromRoute] int id, CancellationToken cancellationToken)
+    {
+        var work = await sender.Send(new GetWorkItemQuery(projectId, id), cancellationToken);
+        return work == null ? NotFound() : View(work);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Create([FromQuery] int projectId, CancellationToken cancellationToken)
+    {
+        var options = await sender.Send(new GetWorkItemOptionsQuery(projectId), cancellationToken);
+        if (options == null) return NotFound();
+        if (options.Project.IsArchived) return RedirectToAction(nameof(Index), new { projectId });
+        return View(new CreateWorkItemViewModel { ProjectId = projectId, Options = options });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create([FromQuery] int projectId, CreateWorkItemViewModel model, CancellationToken cancellationToken)
+    {
+        if (projectId != model.ProjectId) return NotFound();
+        var options = await sender.Send(new GetWorkItemOptionsQuery(projectId), cancellationToken);
+        if (options == null) return NotFound();
+        model.Options = options;
+        if (ModelState.IsValid)
+        {
+            var result = await sender.Send(new CreateWorkItemCommand(projectId, model.Type, model.Title, model.Description ?? "",
+                model.Priority, model.AssigneeId, model.DueDate, model.ParentId, model.EpicId, model.LabelIds ?? []), cancellationToken);
+            if (result.Status == OperationStatus.NotFound) return NotFound();
+            if (result.Status == OperationStatus.Success)
+            {
+                TempData["Success"] = "Work item created.";
+                return RedirectToAction(nameof(Details), new { projectId, id = result.Value });
+            }
+            ApplyError(result);
+        }
+        else Response.StatusCode = StatusCodes.Status400BadRequest;
+        return View(model);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Edit([FromQuery] int projectId, [FromRoute] int id, CancellationToken cancellationToken)
+    {
+        var details = await sender.Send(new GetWorkItemQuery(projectId, id), cancellationToken);
+        if (details == null) return NotFound();
+        if (details.Project.IsArchived || details.Item.IsArchived) return RedirectToAction(nameof(Details), new { projectId, id });
+        var options = await sender.Send(new GetWorkItemOptionsQuery(projectId), cancellationToken);
+        if (options == null) return NotFound();
+        var work = details.Item;
+        return View(new EditWorkItemViewModel
+        {
+            ProjectId = projectId, WorkItemId = id, ExpectedVersion = work.Version, Title = work.Title,
+            Description = work.Description, Priority = work.Priority, AssigneeId = work.AssigneeId, DueDate = work.DueDate,
+            LabelIds = details.Labels.Select(label => label.Id).ToArray(), WorkKey = $"{details.Project.Key}-{work.Number}", Options = options
+        });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Edit([FromQuery] int projectId, [FromRoute] int id, EditWorkItemViewModel model, CancellationToken cancellationToken)
+    {
+        if (projectId != model.ProjectId || id != model.WorkItemId) return NotFound();
+        var details = await sender.Send(new GetWorkItemQuery(projectId, id), cancellationToken);
+        if (details == null) return NotFound();
+        var options = await sender.Send(new GetWorkItemOptionsQuery(projectId), cancellationToken);
+        if (options == null) return NotFound();
+        model.Options = options;
+        model.WorkKey = $"{details.Project.Key}-{details.Item.Number}";
+        if (ModelState.IsValid)
+        {
+            var result = await sender.Send(new UpdateWorkItemCommand(projectId, id, model.ExpectedVersion, model.Title,
+                model.Description ?? "", model.Priority, model.AssigneeId, model.DueDate, model.LabelIds ?? []), cancellationToken);
+            if (result.Status == OperationStatus.NotFound) return NotFound();
+            if (result.Status == OperationStatus.Success)
+            {
+                TempData["Success"] = "Work item saved.";
+                return RedirectToAction(nameof(Details), new { projectId, id });
+            }
+            ApplyError(result);
+        }
+        else Response.StatusCode = StatusCodes.Status400BadRequest;
+        return View(model);
+    }
+
+    private void ApplyError(OperationResult<int> result)
+    {
+        Response.StatusCode = result.Status switch
+        {
+            OperationStatus.Conflict => StatusCodes.Status409Conflict,
+            OperationStatus.Busy => StatusCodes.Status503ServiceUnavailable,
+            _ => StatusCodes.Status400BadRequest
+        };
+        ModelState.AddModelError(result.Field ?? "", result.Status == OperationStatus.Conflict
+            ? "This work item has changed. Reload it before submitting another change." : result.Error ?? "The change could not be saved.");
+    }
+}

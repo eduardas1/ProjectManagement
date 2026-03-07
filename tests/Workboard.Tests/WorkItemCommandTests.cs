@@ -448,6 +448,7 @@ internal class WorkItemSession(ApplicationDbContext context, TestUser user) : Pr
     private LabelRepository Labels => new(Context);
     private WorkItemValidation Validation => new(Works, Repository, Labels);
     public CreateWorkItemHandler CreateWork => new(Works, Repository, Access, Unit, Validation, User, TimeProvider.System);
+    public ChangeWorkItemStatusHandler ChangeStatus => new(Works, Repository, Access, Unit, Validation, User, TimeProvider.System);
     public UpdateWorkItemHandler UpdateWork => new(Works, Repository, Access, Unit, Validation, User, TimeProvider.System);
     public CreateLabelHandler CreateLabel => new(Labels, Repository, Access, Unit, User, TimeProvider.System);
     public RenameLabelHandler RenameLabel => new(Labels, Repository, Access, Unit, User, TimeProvider.System);

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Workboard.Application.Interfaces;
 using Workboard.Application.WorkItems;
 using Workboard.Domain.Entities;
+using Workboard.Domain.Enums;
 using Workboard.Infrastructure.Data;
 
 namespace Workboard.Infrastructure.Repositories;
@@ -22,19 +23,41 @@ public class WorkItemReadRepository(ApplicationDbContext context, ICurrentUser c
             .Select(project => new WorkProject(project.Id, project.Key, project.Name, project.IsArchived, project.OwnerId == currentUser.UserId))
             .SingleOrDefaultAsync(cancellationToken);
 
-    public async Task<WorkItemList?> ListAsync(int projectId, bool archived, int page, CancellationToken cancellationToken)
+    public async Task<WorkItemList?> ListAsync(int projectId, bool archived, int page, CancellationToken cancellationToken, WorkItemStatus? status = null)
     {
+        if (status.HasValue && !Enum.IsDefined(status.Value)) throw new ArgumentOutOfRangeException(nameof(status));
         var project = await GetProjectAsync(projectId, cancellationToken);
         if (project == null) return null;
         var query = WorkQuery(projectId).Where(work => work.IsArchived == archived);
+        if (status.HasValue) query = query.Where(work => work.Status == status.Value);
         var total = await query.CountAsync(cancellationToken);
         var pages = Math.Max(1, (total + 19) / 20);
         page = Math.Clamp(page, 1, pages);
-        var items = await query.OrderBy(work => work.Number).Skip((page - 1) * 20).Take(20)
+        var items = await query.OrderBy(work => work.Number).ThenBy(work => work.Id).Skip((page - 1) * 20).Take(20)
             .Select(work => new WorkItemSummary(work.Id, work.Number, work.Title, work.Type, work.Status, work.Priority,
                 context.Users.Where(user => user.Id == work.AssigneeId).Select(user => user.Email).SingleOrDefault(), work.DueDate))
             .ToListAsync(cancellationToken);
-        return new WorkItemList(project, archived, page, pages, total, items);
+        return new WorkItemList(project, archived, page, pages, total, items, status);
+    }
+
+    public async Task<WorkBoard?> GetBoardAsync(int projectId, CancellationToken cancellationToken)
+    {
+        var project = await GetProjectAsync(projectId, cancellationToken);
+        if (project == null) return null;
+        var items = await WorkQuery(projectId).Where(work => !work.IsArchived
+                && (work.Status == WorkItemStatus.Todo || work.Status == WorkItemStatus.InProgress
+                    || work.Status == WorkItemStatus.InReview || work.Status == WorkItemStatus.Done))
+            .OrderBy(work => work.Number).ThenBy(work => work.Id)
+            .Select(work => new WorkItemSummary(work.Id, work.Number, work.Title, work.Type, work.Status, work.Priority,
+                context.Users.Where(user => user.Id == work.AssigneeId).Select(user => user.Email).SingleOrDefault(), work.DueDate))
+            .ToListAsync(cancellationToken);
+        var columns = new[] { WorkItemStatus.Todo, WorkItemStatus.InProgress, WorkItemStatus.InReview, WorkItemStatus.Done }
+            .Select(status =>
+            {
+                var matches = items.Where(work => work.Status == status).ToList();
+                return new WorkBoardColumn(status, matches.Count, matches.Take(20).ToList());
+            }).ToList();
+        return new WorkBoard(project, columns);
     }
 
     public async Task<WorkItemOptions?> GetOptionsAsync(int projectId, CancellationToken cancellationToken)

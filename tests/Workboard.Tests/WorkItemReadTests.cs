@@ -127,6 +127,101 @@ public class WorkItemReadTests
         Assert.Null(denied);
     }
 
+    [Fact]
+    public async Task BoardAndExactListsAgreeOnSavedStatesCountsAndArchiveBounds()
+    {
+        // Arrange
+        await using var database = new ProjectTestDatabase();
+        await database.InitializeAsync();
+        int projectId, foreignProject;
+        await using (var session = database.Open())
+        {
+            projectId = (await session.Create.Handle(new("AB", "Shared", ""), default)).Value;
+            await session.AddMember.Handle(new(projectId, 1, "member@example.test"), default);
+            foreignProject = (await session.Create.Handle(new("CD", "Private", ""), default)).Value;
+        }
+        await using (var setup = database.OpenContext())
+        {
+            setup.WorkItems.AddRange(Enumerable.Range(1, 28).Select(number => new WorkItem
+            {
+                ProjectId = projectId, Number = number, Title = "Work " + number, CreatedById = "owner",
+                Type = number == 1 ? WorkItemType.Epic : WorkItemType.Task, IsArchived = number == 28,
+                Status = number <= 22 || number == 28 ? WorkItemStatus.Todo : (number == 27 ? WorkItemStatus.Backlog : (WorkItemStatus)(number - 21)),
+                CreatedAtUtc = DateTime.UtcNow, UpdatedAtUtc = DateTime.UtcNow
+            }));
+            setup.WorkItems.Add(new WorkItem { ProjectId = foreignProject, Number = 1, Title = "Secret", CreatedById = "owner",
+                Status = WorkItemStatus.Todo, CreatedAtUtc = DateTime.UtcNow, UpdatedAtUtc = DateTime.UtcNow });
+            await setup.SaveChangesAsync();
+        }
+        await using var read = database.OpenContext();
+        var repository = new WorkItemReadRepository(read, new TestUser("member"));
+
+        // Act
+        var board = await repository.GetBoardAsync(projectId, default);
+        var todo = await repository.ListAsync(projectId, false, 1, default, WorkItemStatus.Todo);
+        var last = await repository.ListAsync(projectId, false, int.MaxValue, default, WorkItemStatus.Todo);
+        var archived = await repository.ListAsync(projectId, true, 1, default, WorkItemStatus.Todo);
+        var all = await repository.ListAsync(projectId, false, 1, default);
+
+        // Assert
+        Assert.NotNull(board);
+        Assert.Equal(new[] { WorkItemStatus.Todo, WorkItemStatus.InProgress, WorkItemStatus.InReview, WorkItemStatus.Done }, board.Columns.Select(column => column.Status));
+        Assert.Equal(new[] { 22, 1, 1, 1 }, board.Columns.Select(column => column.Total));
+        Assert.Equal(20, board.Columns[0].Items.Count);
+        Assert.Equal(Enumerable.Range(1, 20), board.Columns[0].Items.Select(item => item.Number));
+        Assert.Equal(WorkItemType.Epic, board.Columns[0].Items[0].Type);
+        Assert.Equal(todo!.Items, board.Columns[0].Items);
+        Assert.Equal(22, todo.Total);
+        Assert.Equal(WorkItemStatus.Todo, todo.Status);
+        Assert.Equal(2, last!.Page);
+        Assert.Equal(new[] { 21, 22 }, last.Items.Select(item => item.Number));
+        Assert.Equal(28, Assert.Single(archived!.Items).Number);
+        Assert.Equal(27, all!.Total);
+        Assert.Equal(23, board.Columns.Sum(column => column.Items.Count));
+        Assert.Equal(23, board.Columns.SelectMany(column => column.Items).Select(item => item.Id).Distinct().Count());
+        Assert.Null(await repository.GetBoardAsync(foreignProject, default));
+        Assert.Null(await repository.ListAsync(foreignProject, false, 1, default, WorkItemStatus.Todo));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => repository.ListAsync(projectId, false, 1, default, (WorkItemStatus)99));
+    }
+
+    [Fact]
+    public async Task BoardReloadFollowsStatusCommandAndCurrentMembershipEvenOnArchivedProjects()
+    {
+        // Arrange
+        await using var database = new ProjectTestDatabase();
+        await database.InitializeAsync();
+        int projectId, workId;
+        await using (var session = database.Open())
+        {
+            projectId = (await session.Create.Handle(new("AB", "Shared", ""), default)).Value;
+            await session.AddMember.Handle(new(projectId, 1, "member@example.test"), default);
+        }
+        await using (var session = new WorkItemSession(database.OpenContext(), new TestUser("owner")))
+            workId = (await session.CreateWork.Handle(New(projectId), default)).Value;
+        await using var context = database.OpenContext();
+        var repository = new WorkItemReadRepository(context, new TestUser("member"));
+        Assert.All((await repository.GetBoardAsync(projectId, default))!.Columns, column => Assert.Empty(column.Items));
+        Assert.Single((await repository.ListAsync(projectId, false, 1, default, WorkItemStatus.Backlog))!.Items);
+
+        // Act
+        await using (var session = new WorkItemSession(database.OpenContext(), new TestUser("member")))
+            Assert.Equal(OperationStatus.Success, (await session.ChangeStatus.Handle(new(projectId, workId, 1, WorkItemStatus.Todo), default)).Status);
+        var moved = await repository.GetBoardAsync(projectId, default);
+        await using (var session = database.Open()) await session.Archive.Handle(new(projectId, 3, true), default);
+        var archivedProject = await repository.GetBoardAsync(projectId, default);
+        await using (var session = database.Open()) await session.RemoveMember.Handle(new(projectId, 4, "member"), default);
+        var revoked = await repository.GetBoardAsync(projectId, default);
+
+        // Assert
+        Assert.Equal(workId, Assert.Single(moved!.Columns[0].Items).Id);
+        Assert.All(moved.Columns.Skip(1), column => Assert.Empty(column.Items));
+        Assert.Empty((await new WorkItemReadRepository(context, new TestUser("owner")).ListAsync(projectId, false, 1, default, WorkItemStatus.Backlog))!.Items);
+        Assert.True(archivedProject!.Project.IsArchived);
+        Assert.Single(archivedProject.Columns[0].Items);
+        Assert.Null(revoked);
+        Assert.Null(await repository.ListAsync(projectId, false, 1, default, WorkItemStatus.Todo));
+    }
+
     private static CreateWorkItemCommand New(int projectId, WorkItemType type = WorkItemType.Task)
         => new(projectId, type, "Task", "", WorkItemPriority.Medium, null, null, null, null, []);
 }

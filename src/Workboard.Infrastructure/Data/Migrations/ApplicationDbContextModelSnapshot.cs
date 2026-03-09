@@ -209,6 +209,78 @@ namespace Workboard.Infrastructure.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Workboard.Domain.Entities.Attachment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("Contents")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("DocumentId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Length")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("StoredName")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UploadedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UploadedById")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("WorkItemId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StoredName")
+                        .IsUnique();
+
+                    b.HasIndex("UploadedById");
+
+                    b.HasIndex("ProjectId", "DocumentId");
+
+                    b.HasIndex("ProjectId", "WorkItemId");
+
+                    b.ToTable("Attachments", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Attachment_Length", "Length BETWEEN 1 AND 5242880 AND typeof(Contents) = 'blob' AND length(Contents) = Length");
+
+                            t.HasCheckConstraint("CK_Attachment_Name", "length(StoredName) BETWEEN 1 AND 64 AND length(DisplayName) BETWEEN 1 AND 255");
+
+                            t.HasCheckConstraint("CK_Attachment_Target", "(WorkItemId IS NOT NULL AND DocumentId IS NULL) OR (WorkItemId IS NULL AND DocumentId IS NOT NULL)");
+
+                            t.HasCheckConstraint("CK_Attachment_Type", "ContentType IN ('application/pdf', 'image/png', 'image/jpeg', 'text/plain', 'text/csv')");
+
+                            t.HasCheckConstraint("CK_Attachment_Version", "Version > 0");
+                        });
+                });
+
             modelBuilder.Entity("Workboard.Domain.Entities.ChangeEvent", b =>
                 {
                     b.Property<int>("Id")
@@ -227,6 +299,9 @@ namespace Workboard.Infrastructure.Data.Migrations
                     b.Property<string>("DetailsJson")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("DocumentId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("OccurredAtUtc")
                         .HasColumnType("TEXT");
@@ -248,9 +323,127 @@ namespace Workboard.Infrastructure.Data.Migrations
 
                     b.HasIndex("ProjectId", "OccurredAtUtc", "Id");
 
+                    b.HasIndex("ProjectId", "DocumentId", "OccurredAtUtc", "Id");
+
                     b.HasIndex("ProjectId", "WorkItemId", "OccurredAtUtc", "Id");
 
-                    b.ToTable("ChangeEvents", (string)null);
+                    b.ToTable("ChangeEvents", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Change_Target", "WorkItemId IS NULL OR DocumentId IS NULL");
+                        });
+                });
+
+            modelBuilder.Entity("Workboard.Domain.Entities.Comment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AuthorId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(5000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DeletedById")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ModerationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("WorkItemId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorId");
+
+                    b.HasIndex("DeletedById");
+
+                    b.HasIndex("ProjectId", "WorkItemId", "CreatedAtUtc", "Id");
+
+                    b.ToTable("Comments", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Comment_Reason", "(ModerationReason IS NULL OR length(ModerationReason) <= 500) AND (IsDeleted = 0 OR DeletedById = AuthorId OR length(trim(coalesce(ModerationReason, ''))) > 0)");
+
+                            t.HasCheckConstraint("CK_Comment_Removal", "(IsDeleted = 0 AND length(trim(Body)) BETWEEN 1 AND 5000 AND DeletedById IS NULL AND DeletedAtUtc IS NULL AND ModerationReason IS NULL) OR (IsDeleted = 1 AND Body = '' AND DeletedById IS NOT NULL AND DeletedAtUtc IS NOT NULL)");
+
+                            t.HasCheckConstraint("CK_Comment_Version", "Version > 0");
+                        });
+                });
+
+            modelBuilder.Entity("Workboard.Domain.Entities.DocumentRevision", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(100000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DocumentId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EditorId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("SavedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EditorId");
+
+                    b.HasIndex("DocumentId", "Version")
+                        .IsUnique();
+
+                    b.HasIndex("ProjectId", "DocumentId");
+
+                    b.ToTable("DocumentRevisions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Revision_Body", "length(Body) <= 100000");
+
+                            t.HasCheckConstraint("CK_Revision_Title", "length(trim(Title)) BETWEEN 1 AND 200");
+
+                            t.HasCheckConstraint("CK_Revision_Version", "Version > 0");
+                        });
                 });
 
             modelBuilder.Entity("Workboard.Domain.Entities.Label", b =>
@@ -350,6 +543,62 @@ namespace Workboard.Infrastructure.Data.Migrations
                             t.HasCheckConstraint("CK_Project_Number", "NextWorkItemNumber > 0");
 
                             t.HasCheckConstraint("CK_Project_Version", "Version > 0");
+                        });
+                });
+
+            modelBuilder.Entity("Workboard.Domain.Entities.ProjectDocument", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(100000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedById")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedById")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("UpdatedById");
+
+                    b.ToTable("ProjectDocuments", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Document_Body", "length(Body) <= 100000");
+
+                            t.HasCheckConstraint("CK_Document_Title", "length(trim(Title)) BETWEEN 1 AND 200");
+
+                            t.HasCheckConstraint("CK_Document_Version", "Version > 0");
                         });
                 });
 
@@ -591,6 +840,27 @@ namespace Workboard.Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Workboard.Domain.Entities.Attachment", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                        .WithMany()
+                        .HasForeignKey("UploadedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Workboard.Domain.Entities.ProjectDocument", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "DocumentId")
+                        .HasPrincipalKey("ProjectId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Workboard.Domain.Entities.WorkItem", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "WorkItemId")
+                        .HasPrincipalKey("ProjectId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
             modelBuilder.Entity("Workboard.Domain.Entities.ChangeEvent", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
@@ -605,11 +875,54 @@ namespace Workboard.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Workboard.Domain.Entities.ProjectDocument", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "DocumentId")
+                        .HasPrincipalKey("ProjectId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Workboard.Domain.Entities.WorkItem", null)
                         .WithMany()
                         .HasForeignKey("ProjectId", "WorkItemId")
                         .HasPrincipalKey("ProjectId", "Id")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("Workboard.Domain.Entities.Comment", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                        .WithMany()
+                        .HasForeignKey("DeletedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Workboard.Domain.Entities.WorkItem", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "WorkItemId")
+                        .HasPrincipalKey("ProjectId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Workboard.Domain.Entities.DocumentRevision", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                        .WithMany()
+                        .HasForeignKey("EditorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Workboard.Domain.Entities.ProjectDocument", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "DocumentId")
+                        .HasPrincipalKey("ProjectId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Workboard.Domain.Entities.Label", b =>
@@ -626,6 +939,27 @@ namespace Workboard.Infrastructure.Data.Migrations
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
                         .WithMany()
                         .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Workboard.Domain.Entities.ProjectDocument", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Workboard.Domain.Entities.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedById")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

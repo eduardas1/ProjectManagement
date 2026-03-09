@@ -15,6 +15,11 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
     public DbSet<WorkItemLabel> WorkItemLabels => Set<WorkItemLabel>();
     public DbSet<WorkItemLink> WorkItemLinks => Set<WorkItemLink>();
 
+    public DbSet<Comment> Comments => Set<Comment>();
+    public DbSet<ProjectDocument> ProjectDocuments => Set<ProjectDocument>();
+    public DbSet<DocumentRevision> DocumentRevisions => Set<DocumentRevision>();
+    public DbSet<Attachment> Attachments => Set<Attachment>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -25,6 +30,10 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
         builder.ApplyConfiguration(new LabelConfiguration());
         builder.ApplyConfiguration(new WorkItemLabelConfiguration());
         builder.ApplyConfiguration(new WorkItemLinkConfiguration());
+        builder.ApplyConfiguration(new CommentConfiguration());
+        builder.ApplyConfiguration(new ProjectDocumentConfiguration());
+        builder.ApplyConfiguration(new DocumentRevisionConfiguration());
+        builder.ApplyConfiguration(new AttachmentConfiguration());
     }
 
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)

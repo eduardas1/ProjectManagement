@@ -47,7 +47,7 @@ public class ChangeEventConfiguration : IEntityTypeConfiguration<ChangeEvent>
 {
     public void Configure(EntityTypeBuilder<ChangeEvent> builder)
     {
-        builder.ToTable("ChangeEvents");
+        builder.ToTable("ChangeEvents", table => table.HasCheckConstraint("CK_Change_Target", "WorkItemId IS NULL OR DocumentId IS NULL"));
         builder.Property(change => change.Action).HasMaxLength(64);
         builder.Property(change => change.Summary).HasMaxLength(1000);
         builder.HasOne<Project>().WithMany().HasForeignKey(change => change.ProjectId).OnDelete(DeleteBehavior.Restrict);
@@ -56,6 +56,9 @@ public class ChangeEventConfiguration : IEntityTypeConfiguration<ChangeEvent>
         builder.HasOne<WorkItem>().WithMany().HasForeignKey(change => new { change.ProjectId, change.WorkItemId })
             .HasPrincipalKey(work => new { work.ProjectId, work.Id }).OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(change => new { change.ProjectId, change.WorkItemId, change.OccurredAtUtc, change.Id });
+        builder.HasOne<ProjectDocument>().WithMany().HasForeignKey(change => new { change.ProjectId, change.DocumentId })
+            .HasPrincipalKey(document => new { document.ProjectId, document.Id }).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(change => new { change.ProjectId, change.DocumentId, change.OccurredAtUtc, change.Id });
         builder.Property(change => change.OccurredAtUtc).HasConversion(
             value => value.ToUniversalTime(), value => DateTime.SpecifyKind(value, DateTimeKind.Utc));
     }

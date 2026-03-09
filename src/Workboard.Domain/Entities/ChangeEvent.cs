@@ -5,6 +5,7 @@ public class ChangeEvent
     public int Id { get; set; }
     public int ProjectId { get; set; }
     public int? WorkItemId { get; set; }
+    public int? DocumentId { get; set; }
     public string ActorId { get; set; } = "";
     public DateTime OccurredAtUtc { get; set; }
     public string Action { get; set; } = "";

@@ -5,7 +5,8 @@
 @if (Model.Project.IsArchived || Model.Item.IsArchived) { <div class="alert alert-info">This @(Model.Project.IsArchived ? "project" : "work item") is archived.</div> }
 <p><a asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-archived="@Model.Item.IsArchived">Back to work</a>
 @if (!Model.Project.IsArchived && !Model.Item.IsArchived)
-{ <a asp-action="Edit" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id" class="btn btn-default">Edit work item</a> }
+{ <a asp-action="Edit" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id" class="btn btn-default">Edit work item</a>
+  <a asp-action="Status" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)" class="btn btn-default">Change status</a> }
 @if (Model.Project.IsOwner && !Model.Project.IsArchived)
 { <a asp-action="Archive" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id" class="btn btn-default">@(Model.Item.IsArchived ? "Restore work item" : "Archive work item")</a> }
 </p>

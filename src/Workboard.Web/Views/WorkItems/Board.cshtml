@@ -1,0 +1,26 @@
+@model Workboard.Application.WorkItems.WorkBoard
+@{ ViewData["Title"] = Model.Project.Key + " board"; }
+<h1 class="project-text">@Model.Project.Key board</h1>
+@if (Model.Project.IsArchived) { <div class="alert alert-info">This project is archived.</div> }
+<partial name="_WorkNavigation" model="Model.Project" />
+<div class="row">
+@foreach (var column in Model.Columns)
+{
+    <section class="col-md-3">
+        <h2>@column.Status <small>(@column.Total)</small></h2>
+        @if (column.Total == 0) { <p>No work items.</p> }
+        @foreach (var work in column.Items)
+        {
+            <div class="panel panel-default" id="work-@work.Id"><div class="panel-body">
+                <p class="project-text"><a asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@work.Id">@Model.Project.Key-@work.Number @work.Title</a></p>
+                <p>@work.Type / @work.Priority</p><p class="project-text">@(work.Assignee ?? "Unassigned")</p>
+                @if (work.DueDate.HasValue) { <p>Due @work.DueDate.Value.ToString("yyyy-MM-dd")</p> }
+                @if (!Model.Project.IsArchived)
+                { <a asp-action="Status" asp-route-projectId="@Model.Project.Id" asp-route-id="@work.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">Change status<span class="sr-only"> for @Model.Project.Key-@work.Number</span></a> }
+            </div></div>
+        }
+        @if (column.Total > column.Items.Count)
+        { <p><a asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-status="@column.Status">View all @column.Total @column.Status items</a></p> }
+    </section>
+}
+</div>

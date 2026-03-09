@@ -3,16 +3,76 @@ using Microsoft.AspNetCore.Mvc;
 using Workboard.Application.Common;
 using Workboard.Application.WorkItems;
 using Workboard.Web.Models;
+using Workboard.Domain.Enums;
 
 namespace Workboard.Web.Controllers;
 
 public class WorkItemsController(ISender sender) : Controller
 {
     [HttpGet]
-    public async Task<IActionResult> Index([FromQuery] int projectId, bool archived = false, int page = 1, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Index([FromQuery] int projectId, bool archived = false, int page = 1, WorkItemStatus? status = null, CancellationToken cancellationToken = default)
     {
-        var list = await sender.Send(new ListWorkItemsQuery(projectId, archived, page), cancellationToken);
+        if (!ModelState.IsValid || (status.HasValue && !Enum.IsDefined(status.Value))) return BadRequest("Select a valid work status.");
+        var list = await sender.Send(new ListWorkItemsQuery(projectId, archived, page, status), cancellationToken);
         return list == null ? NotFound() : View(list);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Backlog([FromQuery] int projectId, int page = 1, CancellationToken cancellationToken = default)
+    {
+        if (!ModelState.IsValid) return BadRequest("Invalid work list request.");
+        var list = await sender.Send(new ListWorkItemsQuery(projectId, false, page, WorkItemStatus.Backlog), cancellationToken);
+        return list == null ? NotFound() : View("Index", list);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Cancelled([FromQuery] int projectId, int page = 1, CancellationToken cancellationToken = default)
+    {
+        if (!ModelState.IsValid) return BadRequest("Invalid work list request.");
+        var list = await sender.Send(new ListWorkItemsQuery(projectId, false, page, WorkItemStatus.Cancelled), cancellationToken);
+        return list == null ? NotFound() : View("Index", list);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Board([FromQuery] int projectId, CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid) return BadRequest("Invalid board request.");
+        var board = await sender.Send(new GetWorkBoardQuery(projectId), cancellationToken);
+        return board == null ? NotFound() : View(board);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Status([FromQuery] int projectId, [FromRoute] int id, string? returnUrl, CancellationToken cancellationToken)
+    {
+        var details = await sender.Send(new GetWorkItemQuery(projectId, id), cancellationToken);
+        if (details == null) return NotFound();
+        if (returnUrl != null && (returnUrl.Length > 8192 || !Url.IsLocalUrl(returnUrl))) return BadRequest("Return address must be local.");
+        if (details.Project.IsArchived || details.Item.IsArchived) return RedirectToAction(nameof(Details), new { projectId, id });
+        return View(new WorkItemStatusViewModel { ProjectId = projectId, WorkItemId = id,
+            ExpectedVersion = details.Item.Version, Details = details, ReturnUrl = returnUrl });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Status([FromQuery] int projectId, [FromRoute] int id, WorkItemStatusViewModel model, CancellationToken cancellationToken)
+    {
+        if (projectId != model.ProjectId || id != model.WorkItemId) return NotFound();
+        var details = await sender.Send(new GetWorkItemQuery(projectId, id), cancellationToken);
+        if (details == null) return NotFound();
+        model.Details = details;
+        if (model.ReturnUrl != null && !Url.IsLocalUrl(model.ReturnUrl)) ModelState.AddModelError(nameof(model.ReturnUrl), "Return address must be local.");
+        if (ModelState.IsValid)
+        {
+            var result = await sender.Send(new ChangeWorkItemStatusCommand(projectId, id, model.ExpectedVersion, model.Status!.Value), cancellationToken);
+            if (result.Status == OperationStatus.NotFound) return NotFound();
+            if (result.Status == OperationStatus.Success)
+            {
+                TempData["Success"] = "Work status saved.";
+                return model.ReturnUrl == null ? RedirectToAction(nameof(Details), new { projectId, id }) : LocalRedirect(model.ReturnUrl);
+            }
+            ApplyError(result);
+        }
+        else Response.StatusCode = StatusCodes.Status400BadRequest;
+        return View(model);
     }
 
     [HttpGet]

@@ -7,6 +7,7 @@ using Workboard.Application.Projects;
 using Workboard.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestLineSize = 32768);
 var storageDirectory = Path.GetFullPath(builder.Configuration["Storage:Directory"] ?? "App_Data",
     builder.Environment.ContentRootPath);
 

@@ -40,3 +40,11 @@ public class WorkItemArchiveViewModel : WorkItemActionViewModel
 {
     public bool IsArchived { get; set; }
 }
+
+public class WorkItemStatusViewModel : WorkItemActionViewModel
+{
+    [Required, EnumDataType(typeof(WorkItemStatus))]
+    public WorkItemStatus? Status { get; set; }
+    [StringLength(8192)]
+    public string? ReturnUrl { get; set; }
+}

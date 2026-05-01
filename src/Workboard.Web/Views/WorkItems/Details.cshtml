@@ -45,6 +45,8 @@ else
         { <a asp-action="RemoveLink" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id" asp-route-targetId="@link.TargetId" asp-route-kind="@link.Kind">Remove</a> }
         </li>
     }</ul> }
+<h2>Comments</h2>
+<p><a asp-controller="Comments" asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-workItemId="@Model.Item.Id">View comments</a></p>
 <h2>Recent changes</h2>
 <div class="table-responsive"><table class="table table-striped">
     <thead><tr><th>Time (UTC)</th><th>Account</th><th>Change</th></tr></thead>

@@ -1,0 +1,22 @@
+@model RemoveCommentViewModel
+@{ ViewData["Title"] = "Remove comment"; }
+<h1>Remove comment</h1>
+<p class="project-text">@Model.Details.Work.Project.Key-@Model.Details.Work.Number @Model.Details.Work.Title</p>
+<p class="project-text">Author: @Model.Details.Comment.Author</p>
+@if (Model.Details.Comment.IsDeleted) { <p>This comment has been removed.</p> }
+else { <div class="well project-description">@Model.Details.Comment.Body</div> }
+<div class="row"><div class="col-md-8">
+<form asp-action="Remove" asp-route-projectId="@Model.ProjectId" asp-route-workItemId="@Model.WorkItemId" asp-route-id="@Model.CommentId" method="post">
+    <input asp-for="ProjectId" type="hidden" /><input asp-for="WorkItemId" type="hidden" /><input asp-for="CommentId" type="hidden" /><input asp-for="ExpectedVersion" type="hidden" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="form-group">
+        <label asp-for="ModerationReason"></label><textarea asp-for="ModerationReason" class="form-control" rows="3" maxlength="500" aria-describedby="reason-help"></textarea>
+        <p id="reason-help" class="help-block">@(Model.Details.Comment.IsAuthor ? "Optional for your own comment." : "Required when removing another author's comment.")</p>
+        <span asp-validation-for="ModerationReason" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-danger">Remove comment</button>
+    <a asp-action="Index" asp-route-projectId="@Model.ProjectId" asp-route-workItemId="@Model.WorkItemId" class="btn btn-default">Cancel</a>
+    <a asp-action="Remove" asp-route-projectId="@Model.ProjectId" asp-route-workItemId="@Model.WorkItemId" asp-route-id="@Model.CommentId">Reload current version</a>
+</form>
+</div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

@@ -1,0 +1,20 @@
+@model CreateDocumentViewModel
+@{ ViewData["Title"] = "Create document"; }
+<h1>Create document</h1>
+<p class="project-text">@Model.Project.Key - @Model.Project.Name</p>
+<form asp-action="Create" asp-route-projectId="@Model.ProjectId" method="post">
+    <input asp-for="ProjectId" type="hidden" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="form-group">
+        <label asp-for="Title"></label><input asp-for="Title" class="form-control" maxlength="200" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Body"></label><textarea asp-for="Body" class="form-control" rows="15" maxlength="100000"></textarea>
+        <span asp-validation-for="Body" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-primary">Create document</button>
+    <a asp-action="Index" asp-route-projectId="@Model.ProjectId" class="btn btn-default">Cancel</a>
+
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

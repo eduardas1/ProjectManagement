@@ -12,4 +12,11 @@ public class CollaborationRepository(ApplicationDbContext context) : ICollaborat
             && comment.WorkItemId == workItemId && comment.Id == commentId, cancellationToken);
 
     public void AddComment(Comment comment) => context.Comments.Add(comment);
+
+    public Task<ProjectDocument?> FindDocumentAsync(int projectId, int documentId, CancellationToken cancellationToken)
+        => context.ProjectDocuments.SingleOrDefaultAsync(document => document.ProjectId == projectId
+            && document.Id == documentId, cancellationToken);
+
+    public void AddDocument(ProjectDocument document) => context.ProjectDocuments.Add(document);
+    public void AddRevision(DocumentRevision revision) => context.DocumentRevisions.Add(revision);
 }

@@ -23,9 +23,9 @@ public class HomeController : Controller
     [Route("Home/Status/{statusCode:int}")]
     [AllowAnonymous, IgnoreAntiforgeryToken]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Status(int statusCode)
+    public IActionResult Status()
     {
-        if (statusCode < 400 || statusCode > 599)
+        if (!int.TryParse(RouteData.Values["statusCode"]?.ToString(), out var statusCode) || statusCode < 400 || statusCode > 599)
         {
             return NotFound();
         }

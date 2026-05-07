@@ -47,6 +47,8 @@ else
     }</ul> }
 <h2>Comments</h2>
 <p><a asp-controller="Comments" asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-workItemId="@Model.Item.Id">View comments</a></p>
+<h2>Attachments</h2>
+<p><a asp-controller="Attachments" asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-workItemId="@Model.Item.Id">View attachments</a></p>
 <h2>Recent changes</h2>
 <div class="table-responsive"><table class="table table-striped">
     <thead><tr><th>Time (UTC)</th><th>Account</th><th>Change</th></tr></thead>

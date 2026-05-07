@@ -9,4 +9,7 @@ public interface ICollaborationRepository
     Task<ProjectDocument?> FindDocumentAsync(int projectId, int documentId, CancellationToken cancellationToken);
     void AddDocument(ProjectDocument document);
     void AddRevision(DocumentRevision revision);
+    Task<Attachment?> FindAttachmentAsync(int projectId, int attachmentId, CancellationToken cancellationToken);
+    void AddAttachment(Attachment attachment);
+    void RemoveAttachment(Attachment attachment);
 }

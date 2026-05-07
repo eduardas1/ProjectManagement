@@ -19,3 +19,9 @@ code {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
 }
+
+.table-responsive .table .attachment-name {
+  min-width: 12em;
+  max-width: 24em;
+  white-space: normal;
+}

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Workboard.Application.Attachments;
 using Workboard.Application.Comments;
 using Workboard.Application.Documents;
 using Workboard.Application.Projects;
@@ -140,4 +141,63 @@ public class CollaborationReadRepository(ApplicationDbContext context, ICurrentU
         var body = await query.Select(revision => revision.Body).SingleOrDefaultAsync(cancellationToken);
         return body == null ? null : new DocumentRevisionDetails(project, document, info, body);
     }
+
+    public async Task<AttachmentTarget?> GetAttachmentTargetAsync(int projectId, int? workItemId, int? documentId, CancellationToken cancellationToken)
+    {
+        if (workItemId.HasValue == documentId.HasValue) return null;
+        var project = await GetDocumentProjectAsync(projectId, cancellationToken);
+        if (project == null) return null;
+        if (workItemId.HasValue)
+        {
+            var work = await context.WorkItems.AsNoTracking().Where(work => work.ProjectId == projectId && work.Id == workItemId.Value
+                    && context.ProjectMembers.Any(member => member.ProjectId == projectId && member.UserId == currentUser.UserId))
+                .Select(work => new { work.Id, work.Number, work.Title, work.IsArchived }).SingleOrDefaultAsync(cancellationToken);
+            return work == null ? null : new AttachmentTarget(project, work.Id, null, project.Key + "-" + work.Number + " " + work.Title, work.IsArchived);
+        }
+        var document = await DocumentQuery(projectId).Where(document => document.Id == documentId!.Value)
+            .Select(document => new { document.Id, document.Title, document.IsArchived }).SingleOrDefaultAsync(cancellationToken);
+        return document == null ? null : new AttachmentTarget(project, null, document.Id, document.Title, document.IsArchived);
+    }
+
+    private IQueryable<Attachment> AttachmentQuery(int projectId)
+        => context.Attachments.AsNoTracking().Where(attachment => attachment.ProjectId == projectId
+            && context.ProjectMembers.Any(member => member.ProjectId == projectId && member.UserId == currentUser.UserId)
+            && ((attachment.WorkItemId != null && context.WorkItems.Any(work => work.ProjectId == projectId && work.Id == attachment.WorkItemId))
+                || (attachment.DocumentId != null && context.ProjectDocuments.Any(document => document.ProjectId == projectId && document.Id == attachment.DocumentId))));
+
+    private IQueryable<AttachmentInfo> SelectAttachmentInfo(IQueryable<Attachment> query)
+        => query.Select(attachment => new AttachmentInfo(attachment.Id, attachment.Version, attachment.DisplayName,
+            attachment.ContentType, attachment.Length,
+            context.Users.Where(user => user.Id == attachment.UploadedById).Select(user => user.Email ?? user.UserName ?? "Account").Single(),
+            attachment.UploadedAtUtc, attachment.UploadedById == currentUser.UserId
+                || context.Projects.Any(project => project.Id == attachment.ProjectId && project.OwnerId == currentUser.UserId)));
+
+    public async Task<TargetAttachments?> ListAttachmentsAsync(int projectId, int? workItemId, int? documentId, int page, CancellationToken cancellationToken)
+    {
+        var target = await GetAttachmentTargetAsync(projectId, workItemId, documentId, cancellationToken);
+        if (target == null) return null;
+        var query = AttachmentQuery(projectId).Where(attachment => attachment.WorkItemId == workItemId && attachment.DocumentId == documentId);
+        var total = await query.CountAsync(cancellationToken);
+        var pages = Math.Max(1, (total + 19) / 20);
+        page = Math.Clamp(page, 1, pages);
+        var items = await SelectAttachmentInfo(query.OrderByDescending(attachment => attachment.UploadedAtUtc).ThenByDescending(attachment => attachment.Id)
+            .Skip((page - 1) * 20).Take(20)).ToListAsync(cancellationToken);
+        return new TargetAttachments(target, page, pages, total, items);
+    }
+
+    public async Task<AttachmentDetails?> GetAttachmentAsync(int projectId, int attachmentId, CancellationToken cancellationToken)
+    {
+        var query = AttachmentQuery(projectId).Where(attachment => attachment.Id == attachmentId);
+        var parent = await query.Select(attachment => new { attachment.WorkItemId, attachment.DocumentId }).SingleOrDefaultAsync(cancellationToken);
+        if (parent == null) return null;
+        var target = await GetAttachmentTargetAsync(projectId, parent.WorkItemId, parent.DocumentId, cancellationToken);
+        if (target == null) return null;
+        var info = await SelectAttachmentInfo(query).SingleOrDefaultAsync(cancellationToken);
+        return info == null ? null : new AttachmentDetails(target, info);
+    }
+
+    public Task<AttachmentDownload?> DownloadAttachmentAsync(int projectId, int attachmentId, CancellationToken cancellationToken)
+        => AttachmentQuery(projectId).Where(attachment => attachment.Id == attachmentId)
+            .Select(attachment => new AttachmentDownload(attachment.DisplayName, attachment.ContentType, attachment.Contents))
+            .SingleOrDefaultAsync(cancellationToken);
 }

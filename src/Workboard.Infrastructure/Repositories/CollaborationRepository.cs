@@ -19,4 +19,11 @@ public class CollaborationRepository(ApplicationDbContext context) : ICollaborat
 
     public void AddDocument(ProjectDocument document) => context.ProjectDocuments.Add(document);
     public void AddRevision(DocumentRevision revision) => context.DocumentRevisions.Add(revision);
+
+    public Task<Attachment?> FindAttachmentAsync(int projectId, int attachmentId, CancellationToken cancellationToken)
+        => context.Attachments.SingleOrDefaultAsync(attachment => attachment.ProjectId == projectId
+            && attachment.Id == attachmentId, cancellationToken);
+
+    public void AddAttachment(Attachment attachment) => context.Attachments.Add(attachment);
+    public void RemoveAttachment(Attachment attachment) => context.Attachments.Remove(attachment);
 }

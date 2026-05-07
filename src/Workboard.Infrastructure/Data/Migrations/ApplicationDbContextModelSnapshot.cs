@@ -620,6 +620,70 @@ namespace Workboard.Infrastructure.Data.Migrations
                     b.ToTable("ProjectMembers", (string)null);
                 });
 
+            modelBuilder.Entity("Workboard.Domain.Entities.SavedFilter", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Expression")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Ordering")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("ProjectId", "OwnerId", "NormalizedName")
+                        .IsUnique();
+
+                    b.ToTable("SavedFilters", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_SavedFilter_Expression", "length(Expression) <= 2000");
+
+                            t.HasCheckConstraint("CK_SavedFilter_Name", "length(trim(Name)) BETWEEN 1 AND 100");
+
+                            t.HasCheckConstraint("CK_SavedFilter_NormalizedName", "length(NormalizedName) BETWEEN 1 AND 100");
+
+                            t.HasCheckConstraint("CK_SavedFilter_Ordering", "length(Ordering) <= 200");
+
+                            t.HasCheckConstraint("CK_SavedFilters_Version", "Version > 0");
+                        });
+                });
+
             modelBuilder.Entity("Workboard.Domain.Entities.WorkItem", b =>
                 {
                     b.Property<int>("Id")
@@ -979,6 +1043,21 @@ namespace Workboard.Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Workboard.Domain.Entities.SavedFilter", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Workboard.Domain.Entities.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Workboard.Domain.Entities.WorkItem", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
@@ -1013,7 +1092,7 @@ namespace Workboard.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Workboard.Domain.Entities.WorkItemLabel", b =>
                 {
-                    b.HasOne("Workboard.Domain.Entities.Label", null)
+                    b.HasOne("Workboard.Domain.Entities.Label", "Label")
                         .WithMany()
                         .HasForeignKey("ProjectId", "LabelId")
                         .HasPrincipalKey("ProjectId", "Id")
@@ -1021,11 +1100,13 @@ namespace Workboard.Infrastructure.Data.Migrations
                         .IsRequired();
 
                     b.HasOne("Workboard.Domain.Entities.WorkItem", null)
-                        .WithMany()
+                        .WithMany("Labels")
                         .HasForeignKey("ProjectId", "WorkItemId")
                         .HasPrincipalKey("ProjectId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Label");
                 });
 
             modelBuilder.Entity("Workboard.Domain.Entities.WorkItemLink", b =>
@@ -1049,6 +1130,11 @@ namespace Workboard.Infrastructure.Data.Migrations
                         .HasPrincipalKey("ProjectId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Workboard.Domain.Entities.WorkItem", b =>
+                {
+                    b.Navigation("Labels");
                 });
 #pragma warning restore 612, 618
         }

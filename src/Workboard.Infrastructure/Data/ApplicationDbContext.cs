@@ -19,6 +19,7 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
     public DbSet<ProjectDocument> ProjectDocuments => Set<ProjectDocument>();
     public DbSet<DocumentRevision> DocumentRevisions => Set<DocumentRevision>();
     public DbSet<Attachment> Attachments => Set<Attachment>();
+    public DbSet<SavedFilter> SavedFilters => Set<SavedFilter>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -34,6 +35,7 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
         builder.ApplyConfiguration(new ProjectDocumentConfiguration());
         builder.ApplyConfiguration(new DocumentRevisionConfiguration());
         builder.ApplyConfiguration(new AttachmentConfiguration());
+        builder.ApplyConfiguration(new SavedFilterConfiguration());
     }
 
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)

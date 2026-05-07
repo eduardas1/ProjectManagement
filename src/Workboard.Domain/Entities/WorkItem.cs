@@ -21,4 +21,5 @@ public class WorkItem
     public long Version { get; set; } = 1;
     public DateTime CreatedAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
+    public List<WorkItemLabel> Labels { get; set; } = [];
 }

@@ -72,9 +72,9 @@ public class WorkItemLabelConfiguration : IEntityTypeConfiguration<WorkItemLabel
         builder.ToTable("WorkItemLabels");
         builder.HasKey(label => new { label.ProjectId, label.WorkItemId, label.LabelId });
         builder.HasIndex(label => new { label.ProjectId, label.LabelId, label.WorkItemId });
-        builder.HasOne<WorkItem>().WithMany().HasForeignKey(label => new { label.ProjectId, label.WorkItemId })
+        builder.HasOne<WorkItem>().WithMany(work => work.Labels).HasForeignKey(label => new { label.ProjectId, label.WorkItemId })
             .HasPrincipalKey(work => new { work.ProjectId, work.Id }).OnDelete(DeleteBehavior.Restrict);
-        builder.HasOne<Label>().WithMany().HasForeignKey(label => new { label.ProjectId, label.LabelId })
+        builder.HasOne(label => label.Label).WithMany().HasForeignKey(label => new { label.ProjectId, label.LabelId })
             .HasPrincipalKey(label => new { label.ProjectId, label.Id }).OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -42,6 +42,8 @@ public static class DependencyInjection
         services.AddScoped<Workboard.Application.WorkItems.WorkItemValidation>();
         services.AddScoped<IProjectAccess, ProjectAccess>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddSingleton<ISearchDefinitionValidator, Workboard.Infrastructure.Search.WorkSearchSyntax>();
+        services.AddScoped<Workboard.Infrastructure.Search.WorkItemSearchMapper>();
         services.AddSingleton(TimeProvider.System);
         return services;
     }

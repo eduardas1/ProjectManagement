@@ -25,3 +25,7 @@ code {
   max-width: 24em;
   white-space: normal;
 }
+
+.table-responsive {
+    position: relative;
+}

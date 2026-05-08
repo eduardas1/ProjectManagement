@@ -17,7 +17,7 @@ public class WorkSearchSyntaxTests
         var accepted = new[] { "", "(status=Todo|priority=High),number>=0", @"title=\(one\),number=2", "deadline=", "assignee!=", "label=*billing/i",
             string.Join(",", Enumerable.Repeat("number>0", 32)), new string('(', 8) + "number=1" + new string(')', 8) };
         var rejected = new[] { "ProjectId=2", "title[0]=x", "status=123", "status=todo", "priority>Low", "deadline=31/10/2026", "deadline=2026-02-30",
-            "deadline=/i", "label!=billing", "label=", "number=9999999999999", "number=*1", "assignee^a", "number=1=2", "status=(",
+            "deadline=/i", "title=*Ąžuolas/i", "label!=billing", "label=", "number=9999999999999", "number=*1", "assignee^a", "number=1=2", "status=(",
             new string('(', 9) + "number=1" + new string(')', 9), string.Join(",", Enumerable.Repeat("number>0", 33)), @"title=hello\", new string('x', 2001) };
 
         // Act

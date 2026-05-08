@@ -1,10 +1,11 @@
 @model Workboard.Application.WorkItems.WorkProject
 <p>
     <a asp-controller="Projects" asp-action="Details" asp-route-id="@Model.Id">Back to project</a>
-    <a asp-action="Index" asp-route-projectId="@Model.Id" class="btn btn-default">All work</a>
-    <a asp-action="Backlog" asp-route-projectId="@Model.Id" class="btn btn-default">Backlog</a>
-    <a asp-action="Board" asp-route-projectId="@Model.Id" class="btn btn-default">Board</a>
-    <a asp-action="Cancelled" asp-route-projectId="@Model.Id" class="btn btn-default">Cancelled</a>
+    <a asp-controller="WorkItems" asp-action="Index" asp-route-projectId="@Model.Id" class="btn btn-default">All work</a>
+    <a asp-controller="WorkItems" asp-action="Backlog" asp-route-projectId="@Model.Id" class="btn btn-default">Backlog</a>
+    <a asp-controller="WorkItems" asp-action="Board" asp-route-projectId="@Model.Id" class="btn btn-default">Board</a>
+    <a asp-controller="WorkItems" asp-action="Cancelled" asp-route-projectId="@Model.Id" class="btn btn-default">Cancelled</a>
+    <a asp-controller="Search" asp-action="Index" asp-route-projectId="@Model.Id" class="btn btn-default">Search</a>
     <a asp-controller="Labels" asp-action="Index" asp-route-projectId="@Model.Id" class="btn btn-default">Labels</a>
-    @if (!Model.IsArchived) { <a asp-action="Create" asp-route-projectId="@Model.Id" class="btn btn-primary">Create work item</a> }
+    @if (!Model.IsArchived) { <a asp-controller="WorkItems" asp-action="Create" asp-route-projectId="@Model.Id" class="btn btn-primary">Create work item</a> }
 </p>

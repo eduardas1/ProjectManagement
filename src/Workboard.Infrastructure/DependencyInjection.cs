@@ -36,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<IWorkItemRepository, WorkItemRepository>();
         services.AddScoped<IWorkItemReadRepository, WorkItemReadRepository>();
+        services.AddScoped<IWorkSearchRepository, WorkSearchRepository>();
         services.AddScoped<ILabelRepository, LabelRepository>();
         services.AddScoped<ICollaborationRepository, CollaborationRepository>();
         services.AddScoped<ICollaborationReadRepository, CollaborationReadRepository>();

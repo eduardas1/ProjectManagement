@@ -46,7 +46,7 @@ public class WorkItemsController(ISender sender) : Controller
     {
         var details = await sender.Send(new GetWorkItemQuery(projectId, id), cancellationToken);
         if (details == null) return NotFound();
-        if (returnUrl != null && (returnUrl.Length > 8192 || !Url.IsLocalUrl(returnUrl))) return BadRequest("Return address must be local.");
+        if (returnUrl != null && (returnUrl.Length > 32768 || !Url.IsLocalUrl(returnUrl))) return BadRequest("Return address must be local.");
         if (details.Project.IsArchived || details.Item.IsArchived) return RedirectToAction(nameof(Details), new { projectId, id });
         return View(new WorkItemStatusViewModel { ProjectId = projectId, WorkItemId = id,
             ExpectedVersion = details.Item.Version, Details = details, ReturnUrl = returnUrl });

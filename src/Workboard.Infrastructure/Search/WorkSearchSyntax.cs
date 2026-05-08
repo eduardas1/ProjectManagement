@@ -49,6 +49,8 @@ public class WorkSearchSyntax : ISearchDefinitionValidator
     private static string? ValidateComparison(string field, SyntaxKind op, ValueExpressionSyntax value)
     {
         var text = value.ValueToken.Text ?? "";
+        if (value.IsCaseInsensitive && text.Any(character => character > 127))
+            return "Use exact text without /i for non-ASCII letters.";
         var equality = op is SyntaxKind.Equal or SyntaxKind.NotEqual;
         var comparison = equality || op is SyntaxKind.LessThan or SyntaxKind.LessOrEqualThan or SyntaxKind.GreaterThan or SyntaxKind.GreaterOrEqualThan;
         var positiveText = op is SyntaxKind.Equal or SyntaxKind.Like or SyntaxKind.StartsWith or SyntaxKind.EndsWith;

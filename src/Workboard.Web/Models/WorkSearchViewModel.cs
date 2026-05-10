@@ -12,6 +12,8 @@ public class WorkSearchViewModel
     public WorkSearchOptions Options { get; set; } = null!;
     [BindNever, ValidateNever]
     public WorkSearchPage? Results { get; set; }
+    [BindNever, ValidateNever]
+    public SavedSearchList? SavedSearches { get; set; }
 
     public Dictionary<string, string> Routes(int page)
     {

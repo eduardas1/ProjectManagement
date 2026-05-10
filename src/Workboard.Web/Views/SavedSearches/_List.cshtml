@@ -1,0 +1,20 @@
+@model SavedSearchListViewModel
+<h2 id="saved-searches-title" tabindex="-1">My saved searches (@Model.Searches.Items.Count)</h2>
+@if (Model.Searches.Items.Count == 0) { <p>You have no saved searches in this project.</p> }
+else
+{
+    <div class="table-responsive"><table class="table table-striped saved-searches-table">
+        <thead><tr><th>Name</th><th>Actions</th></tr></thead>
+        <tbody>@foreach (var item in Model.Searches.Items)
+        {
+            <tr data-saved-id="@item.Id"><td class="project-text">@item.Name</td><td>
+                <a class="btn btn-link btn-xs" asp-controller="SavedSearches" asp-action="Run" asp-route-projectId="@Model.Searches.Project.Id" asp-route-id="@item.Id">Run<span class="sr-only"> @item.Name</span></a>
+                @if (!Model.Searches.Project.IsArchived)
+                {
+                    <a class="btn btn-link btn-xs" asp-controller="SavedSearches" asp-action="Rename" asp-route-projectId="@Model.Searches.Project.Id" asp-route-id="@item.Id" asp-route-returnUrl="@Model.ReturnUrl" data-modal-form data-modal-title="Rename search">Rename<span class="sr-only"> @item.Name</span></a>
+                    <a class="btn btn-link btn-xs" asp-controller="SavedSearches" asp-action="Delete" asp-route-projectId="@Model.Searches.Project.Id" asp-route-id="@item.Id" asp-route-returnUrl="@Model.ReturnUrl" data-modal-form data-modal-title="Delete search">Delete<span class="sr-only"> @item.Name</span></a>
+                }
+            </td></tr>
+        }</tbody>
+    </table></div>
+}

@@ -1,0 +1,11 @@
+@model SavedSearchListViewModel
+@{ ViewData["Title"] = "My saved searches"; }
+<h1 class="project-text">@Model.Searches.Project.Key saved searches</h1>
+<partial name="~/Views/WorkItems/_WorkNavigation.cshtml" model="Model.Searches.Project" />
+@if (Model.Searches.Project.IsArchived) { <div class="alert alert-info">This project is archived. Saved searches can still be opened.</div> }
+<div class="alert hidden" role="status" data-modal-notice></div>
+<div id="saved-searches" data-modal-list-url="@Url.Action("Index", "SavedSearches", new { projectId = Model.Searches.Project.Id, returnUrl = Model.ReturnUrl })">
+    <partial name="_List" model="Model" />
+</div>
+<partial name="~/Views/Shared/_ContextModal.cshtml" />
+@section Scripts { <script src="~/js/context-modal.js" asp-append-version="true"></script> }

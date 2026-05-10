@@ -14,6 +14,8 @@ public class SearchController(ISender sender) : Controller
         var options = await sender.Send(new GetWorkSearchOptionsQuery(projectId), cancellationToken);
         if (options == null) return NotFound();
         model.Options = options;
+        model.SavedSearches = await sender.Send(new ListSavedSearchesQuery(projectId), cancellationToken);
+        if (model.SavedSearches == null) return NotFound();
         model.Input ??= new WorkSearchInput();
         if (ModelState.IsValid)
         {

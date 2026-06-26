@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Change status";
     var choices = WorkItemWorkflow.AllowedStatuses(Model.Details.Item.Status).Prepend(Model.Details.Item.Status).ToList();
-    var returnUrl = !string.IsNullOrEmpty(Model.ReturnUrl) && Model.ReturnUrl.Length <= 8192 && Url.IsLocalUrl(Model.ReturnUrl)
+    var returnUrl = !string.IsNullOrEmpty(Model.ReturnUrl) && Model.ReturnUrl.Length <= ReturnNavigation.MaxLength && Url.IsLocalUrl(Model.ReturnUrl)
         ? Model.ReturnUrl : Url.Action("Details", new { projectId = Model.ProjectId, id = Model.WorkItemId });
 }
 <h1 class="project-text">Change @Model.Details.Project.Key-@Model.Details.Item.Number status</h1>

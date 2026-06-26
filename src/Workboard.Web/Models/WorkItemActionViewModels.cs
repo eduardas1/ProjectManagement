@@ -45,6 +45,6 @@ public class WorkItemStatusViewModel : WorkItemActionViewModel
 {
     [Required, EnumDataType(typeof(WorkItemStatus))]
     public WorkItemStatus? Status { get; set; }
-    [StringLength(32768)]
+    [StringLength(ReturnNavigation.MaxLength)]
     public string? ReturnUrl { get; set; }
 }

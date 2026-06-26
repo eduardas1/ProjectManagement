@@ -18,7 +18,7 @@ public class SavedSearchFormViewModel
     [StringLength(200)]
     public string? Ordering { get; set; }
     public bool Archived { get; set; }
-    [StringLength(32768)]
+    [StringLength(ReturnNavigation.MaxLength)]
     public string? ReturnUrl { get; set; }
     [BindNever, ValidateNever]
     public WorkProject Project { get; set; } = null!;

@@ -9,7 +9,7 @@ namespace Workboard.Web.Controllers;
 public class SavedSearchesController(ISender sender) : Controller
 {
     private bool IsAjax => Request.Headers["X-Requested-With"] == "XMLHttpRequest";
-    private bool ValidReturn(string? value) => string.IsNullOrEmpty(value) || (value.Length <= 32768 && Url.IsLocalUrl(value));
+    private bool ValidReturn(string? value) => string.IsNullOrEmpty(value) || (value.Length <= ReturnNavigation.MaxLength && Url.IsLocalUrl(value));
 
     [HttpGet]
     public async Task<IActionResult> Index([FromQuery] int projectId, string? returnUrl, CancellationToken cancellationToken)

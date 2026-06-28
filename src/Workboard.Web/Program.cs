@@ -15,6 +15,18 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddMediatR(options => options.RegisterServicesFromAssemblyContaining<CreateProjectCommand>());
 builder.Services.AddInfrastructure(storageDirectory);
+TimeZoneInfo reportingTimeZone;
+try
+{
+    reportingTimeZone = TimeZoneInfo.FindSystemTimeZoneById(builder.Configuration["Reporting:TimeZone"] ?? "Europe/Vilnius");
+}
+catch (Exception exception) when (exception is TimeZoneNotFoundException or InvalidTimeZoneException)
+{
+    Console.Error.WriteLine("Reporting:TimeZone must name an installed time zone.");
+    return 1;
+}
+builder.Services.AddSingleton(provider => new Workboard.Application.Reports.ReportingCalendar(
+    provider.GetRequiredService<TimeProvider>(), reportingTimeZone));
 builder.Services.AddControllersWithViews(options =>
     options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
 builder.Services.AddAuthorization(options => options.FallbackPolicy =

@@ -3,6 +3,7 @@ using Workboard.Application.Common;
 using Workboard.Application.Interfaces;
 using Workboard.Application.Reports;
 using Workboard.Application.Search;
+using Workboard.Application.WorkItems;
 using Workboard.Domain.Enums;
 using Workboard.Infrastructure.Data;
 using Workboard.Infrastructure.Search;
@@ -13,6 +14,9 @@ public class ProjectProgressRepository(ApplicationDbContext context, ICurrentUse
     ISearchDefinitionValidator validator, WorkItemSearchMapper mapper, ReportingCalendar calendar) : IProjectProgressRepository
 {
     private readonly WorkSearchQuery search = new(context, currentUser, validator, mapper);
+
+    public Task<WorkProject?> GetProjectAsync(int projectId, CancellationToken cancellationToken)
+        => search.GetProjectAsync(projectId, cancellationToken);
 
     public async Task<OperationResult<ProjectProgress>> GetProgressAsync(int projectId, WorkSearchInput input, CancellationToken cancellationToken)
     {

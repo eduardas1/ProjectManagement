@@ -6,6 +6,7 @@
     <a asp-controller="WorkItems" asp-action="Board" asp-route-projectId="@Model.Id" class="btn btn-default">Board</a>
     <a asp-controller="WorkItems" asp-action="Cancelled" asp-route-projectId="@Model.Id" class="btn btn-default">Cancelled</a>
     <a asp-controller="Search" asp-action="Index" asp-route-projectId="@Model.Id" class="btn btn-default">Search</a>
+    <a asp-controller="Reports" asp-action="Index" asp-route-projectId="@Model.Id" class="btn btn-default">Progress</a>
     <a asp-controller="SavedSearches" asp-action="Index" asp-route-projectId="@Model.Id" class="btn btn-default">Saved searches</a>
     <a asp-controller="Labels" asp-action="Index" asp-route-projectId="@Model.Id" class="btn btn-default">Labels</a>
     @if (!Model.IsArchived) { <a asp-controller="WorkItems" asp-action="Create" asp-route-projectId="@Model.Id" class="btn btn-primary">Create work item</a> }

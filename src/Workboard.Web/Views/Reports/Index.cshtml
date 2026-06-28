@@ -1,0 +1,39 @@
+@using System.Globalization
+@model ProjectProgressViewModel
+@{ ViewData["Title"] = Model.Project.Key + " progress"; }
+<h1 class="project-text">@Model.Project.Key progress</h1>
+@if (Model.Project.IsArchived) { <div class="alert alert-info">This project is archived. Its progress remains available.</div> }
+<partial name="~/Views/WorkItems/_WorkNavigation.cshtml" model="Model.Project" />
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+<p>Filter: <code class="report-expression">@(string.IsNullOrEmpty(Model.Progress?.Expression ?? Model.Input.Expression) ? "All work" : Model.Progress?.Expression ?? Model.Input.Expression)</code></p>
+<p><a asp-controller="Search" asp-action="Index" asp-all-route-data="Model.SearchRoutes()" class="btn btn-default">Back to search</a>
+    <a asp-action="Index" asp-route-projectId="@Model.Project.Id" class="btn btn-default">Clear filter</a></p>
+@if (Model.Progress is { } progress)
+{
+    <p>Reporting date: <time datetime="@progress.ReportDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)">@progress.ReportDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)</time> (@progress.TimeZoneId).</p>
+    <dl class="dl-horizontal">
+        <dt>Eligible work</dt><dd data-report-key="eligible">@progress.EligibleTotal</dd>
+        <dt>Completed</dt><dd data-report-key="completed">@progress.Completed</dd>
+        <dt>Cancelled</dt><dd data-report-key="cancelled">@progress.Cancelled</dd>
+        <dt>Completion</dt><dd data-report-key="completion">@(progress.CompletionPercent.HasValue ? progress.CompletionPercent.Value.ToString("F1", CultureInfo.InvariantCulture) + "%" : "Not available")</dd>
+        <dt>Overdue</dt><dd data-report-key="overdue">@progress.Overdue</dd>
+    </dl>
+    <p>Counts cover unarchived execution work. Epics and parents with unarchived subtasks are excluded.
+        Completion uses @progress.Completed completed out of <span data-report-key="denominator">@progress.CompletionTotal</span> eligible non-cancelled items.
+        Overdue work has an unfinished status and a due date before the reporting date.</p>
+    @if (progress.EligibleTotal == 0) { <p>No matching execution work.</p> }
+    <div class="row">
+        <div class="col-sm-6">
+            <h2>States</h2>
+            <table class="table table-striped report-states"><thead><tr><th>State</th><th>Count</th></tr></thead>
+                <tbody>@foreach (var entry in progress.States) { <tr data-state="@entry.Key"><td>@entry.Key</td><td>@entry.Value</td></tr> }</tbody>
+            </table>
+        </div>
+        <div class="col-sm-6">
+            <h2>Priorities</h2>
+            <table class="table table-striped report-priorities"><thead><tr><th>Priority</th><th>Count</th></tr></thead>
+                <tbody>@foreach (var entry in progress.Priorities) { <tr data-priority="@entry.Key"><td>@entry.Key</td><td>@entry.Value</td></tr> }</tbody>
+            </table>
+        </div>
+    </div>
+}

@@ -52,6 +52,17 @@
         event.preventDefault();
         begin($(this).find('[type=submit]')[0], $(this).attr('data-modal-title'), {url: localUrl(this.action), method: 'POST', data: $(this).serialize()});
     });
+    modal.on('keydown', function (event) {
+        if (event.which !== 9) return;
+        var controls = modal.find('a[href],button,input,select,textarea,[tabindex]').filter(':visible:not(:disabled)').filter(function () { return this.tabIndex >= 0; });
+        var first = controls[0], last = controls[controls.length - 1];
+        if (!first) { event.preventDefault(); modal.trigger('focus'); return; }
+        if (event.shiftKey && (document.activeElement === first || document.activeElement === modal[0])) {
+            event.preventDefault(); $(last).trigger('focus');
+        } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === modal[0])) {
+            event.preventDefault(); $(first).trigger('focus');
+        }
+    });
     modal.on('shown.bs.modal', focusForm);
     modal.on('hide.bs.modal', function (event) {
         if (pending) { event.preventDefault(); return; }

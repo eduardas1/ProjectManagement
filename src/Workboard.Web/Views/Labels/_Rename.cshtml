@@ -1,0 +1,11 @@
+@model RenameLabelViewModel
+<form asp-action="Rename" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.LabelId" method="post" data-modal-submit>
+    <input asp-for="ProjectId" type="hidden" /><input asp-for="LabelId" type="hidden" /><input asp-for="ExpectedVersion" type="hidden" />
+    <div asp-validation-summary="All" class="text-danger" role="alert" tabindex="-1"></div>
+    <div class="form-group">
+        <label asp-for="Name"></label><input asp-for="Name" maxlength="40" autocomplete="off" class="form-control" />
+    </div>
+    @if (!Model.Project.IsArchived)
+    { <button type="submit" class="btn btn-primary">Rename label</button> }
+    <a asp-action="Index" asp-route-projectId="@Model.ProjectId" class="btn btn-default" data-modal-cancel>Cancel</a>
+</form>

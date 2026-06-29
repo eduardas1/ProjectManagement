@@ -5,6 +5,8 @@
     var body = modal.find('[data-modal-body]');
     var error = modal.find('[data-modal-error]');
     var notice = $('[data-modal-notice]');
+    var list = $('[data-modal-list-url]');
+    function focusList() { var heading = $('[data-modal-focus]')[0]; if (heading) heading.focus({preventScroll: true}); }
     var trigger = null;
     var pending = false;
     var load = null;
@@ -18,7 +20,7 @@
     function showError(message) { error.text(message).removeClass('hidden'); }
     function failureMessage(xhr) {
         if (xhr.status === 401) return 'Your session has ended. Sign in again before trying this change.';
-        if (xhr.status === 403 || xhr.status === 404) return 'This search or project is no longer available to your account.';
+        if (xhr.status === 403 || xhr.status === 404) return 'This item or project is no longer available to your account.';
         if (xhr.status === 0) return 'The connection was interrupted. Check whether the change was saved before trying again.';
         return 'The form could not be loaded or saved. Your input has been kept. Please try again.';
     }
@@ -71,7 +73,7 @@
     modal.on('hidden.bs.modal', function () {
         body.empty(); error.addClass('hidden').text('');
         if (trigger && document.contains(trigger)) $(trigger).trigger('focus');
-        else $('#saved-searches-title').trigger('focus');
+        else focusList();
     });
     modal.on('click', '[data-modal-cancel]', function (event) { event.preventDefault(); modal.modal('hide'); });
     modal.on('submit', 'form[data-modal-submit]', function (event) {
@@ -81,13 +83,13 @@
         $.ajax({url: localUrl(this.action), method: 'POST', data: submitted}).done(function (data) {
             if (!data || data.saved !== true) { showError('The server did not confirm this change. Check the saved list before trying again.'); return; }
             pending = false; modal.modal('hide');
-            notice.removeClass('hidden alert-danger').addClass('alert-success').text(data.message || 'Search saved.');
-            var list = $('#saved-searches'); var position = window.scrollY;
+            notice.removeClass('hidden alert-danger').addClass('alert-success').text(data.message || 'Change saved.');
+            var position = window.scrollY;
             $.ajax({url: localUrl(list.attr('data-modal-list-url')), method: 'GET'}).done(function (html, status, xhr) {
                 if (xhr.getResponseHeader('X-Workboard-Partial') !== 'list') { refreshFailed(); return; }
                 list.empty().append($.parseHTML(html, document, false));
                 window.scrollTo(window.scrollX, position);
-                if (!trigger || !document.contains(trigger)) $('#saved-searches-title').trigger('focus');
+                if (!trigger || !document.contains(trigger)) focusList();
             }).fail(refreshFailed);
             function refreshFailed() {
                 notice.removeClass('alert-success').addClass('alert-danger').text('Your change was saved, but the list could not be refreshed. Reload this page to see it.');

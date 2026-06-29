@@ -9,11 +9,16 @@ namespace Workboard.Web.Controllers;
 
 public class LabelsController(ISender sender) : Controller
 {
+    private bool IsAjax => Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+
     [HttpGet]
     public async Task<IActionResult> Index([FromQuery] int projectId, CancellationToken cancellationToken)
     {
         var labels = await sender.Send(new ListLabelsQuery(projectId), cancellationToken);
-        return labels == null ? NotFound() : View(labels);
+        if (labels == null) return NotFound();
+        if (!IsAjax) return View(labels);
+        Response.Headers["X-Workboard-Partial"] = "list";
+        return PartialView("_List", labels);
     }
 
     [HttpGet]
@@ -21,8 +26,8 @@ public class LabelsController(ISender sender) : Controller
     {
         var labels = await sender.Send(new ListLabelsQuery(projectId), cancellationToken);
         if (labels == null) return NotFound();
-        if (labels.Project.IsArchived) return RedirectToAction(nameof(Index), new { projectId });
-        return View(new CreateLabelViewModel { ProjectId = projectId, Project = labels.Project });
+        if (labels.Project.IsArchived) ModelState.AddModelError("", "Restore this project before creating labels.");
+        return Form("Create", new CreateLabelViewModel { ProjectId = projectId, Project = labels.Project });
     }
 
     [HttpPost]
@@ -38,13 +43,12 @@ public class LabelsController(ISender sender) : Controller
             if (result.Status == OperationStatus.NotFound) return NotFound();
             if (result.Status == OperationStatus.Success)
             {
-                TempData["Success"] = "Label created.";
-                return RedirectToAction(nameof(Index), new { projectId });
+                return Saved(projectId, "Label created.");
             }
             ApplyError(result);
         }
         else Response.StatusCode = StatusCodes.Status400BadRequest;
-        return View(model);
+        return Form("Create", model);
     }
 
     [HttpGet]
@@ -53,8 +57,8 @@ public class LabelsController(ISender sender) : Controller
         var labels = await sender.Send(new ListLabelsQuery(projectId), cancellationToken);
         var label = labels?.Items.SingleOrDefault(item => item.Id == id);
         if (labels == null || label == null) return NotFound();
-        if (labels.Project.IsArchived) return RedirectToAction(nameof(Index), new { projectId });
-        return View(new RenameLabelViewModel { ProjectId = projectId, LabelId = id, Name = label.Name,
+        if (labels.Project.IsArchived) ModelState.AddModelError("", "Restore this project before renaming labels.");
+        return Form("Rename", new RenameLabelViewModel { ProjectId = projectId, LabelId = id, Name = label.Name,
             ExpectedVersion = label.Version, Project = labels.Project });
     }
 
@@ -71,13 +75,12 @@ public class LabelsController(ISender sender) : Controller
             if (result.Status == OperationStatus.NotFound) return NotFound();
             if (result.Status == OperationStatus.Success)
             {
-                TempData["Success"] = "Label renamed.";
-                return RedirectToAction(nameof(Index), new { projectId });
+                return Saved(projectId, "Label renamed.");
             }
             ApplyError(result);
         }
         else Response.StatusCode = StatusCodes.Status400BadRequest;
-        return View(model);
+        return Form("Rename", model);
     }
 
     [HttpGet]
@@ -86,8 +89,8 @@ public class LabelsController(ISender sender) : Controller
         var labels = await sender.Send(new ListLabelsQuery(projectId), cancellationToken);
         var label = labels?.Items.SingleOrDefault(item => item.Id == id);
         if (labels == null || !labels.Project.IsOwner || label == null) return NotFound();
-        if (labels.Project.IsArchived) return RedirectToAction(nameof(Index), new { projectId });
-        return View(new DeleteLabelViewModel { ProjectId = projectId, LabelId = id, ExpectedVersion = label.Version,
+        if (labels.Project.IsArchived) ModelState.AddModelError("", "Restore this project before deleting labels.");
+        return Form("Delete", new DeleteLabelViewModel { ProjectId = projectId, LabelId = id, ExpectedVersion = label.Version,
             Name = label.Name, UsageCount = label.UsageCount, Project = labels.Project });
     }
 
@@ -105,13 +108,26 @@ public class LabelsController(ISender sender) : Controller
             if (result.Status == OperationStatus.NotFound) return NotFound();
             if (result.Status == OperationStatus.Success)
             {
-                TempData["Success"] = "Unused label deleted.";
-                return RedirectToAction(nameof(Index), new { projectId });
+                return Saved(projectId, "Unused label deleted.");
             }
             ApplyError(result);
         }
         else Response.StatusCode = StatusCodes.Status400BadRequest;
-        return View(model);
+        return Form("Delete", model);
+    }
+
+    private IActionResult Form(string action, object model)
+    {
+        if (!IsAjax) return View(action, model);
+        Response.Headers["X-Workboard-Partial"] = "modal";
+        return PartialView("_" + action, model);
+    }
+
+    private IActionResult Saved(int projectId, string message)
+    {
+        if (IsAjax) return Json(new { saved = true, message });
+        TempData["Success"] = message;
+        return RedirectToAction(nameof(Index), new { projectId });
     }
 
     private void ApplyError(OperationResult<int> result)

@@ -1,5 +1,5 @@
 @model SavedSearchListViewModel
-<h2 id="saved-searches-title" tabindex="-1">My saved searches (@Model.Searches.Items.Count)</h2>
+<h2 id="saved-searches-title" tabindex="-1" data-modal-focus>My saved searches (@Model.Searches.Items.Count)</h2>
 @if (Model.Searches.Items.Count == 0) { <p>You have no saved searches in this project.</p> }
 else
 {

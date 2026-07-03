@@ -1,7 +1,6 @@
 (function ($) {
     'use strict';
     var board = $('#work-board');
-    if (!board.length) return;
     var notice = $('[data-board-notice]');
     var busy = false;
     var sortables = [];
@@ -15,6 +14,7 @@
         board.find('.kanban-board').toggleClass('is-saving', value).attr('aria-busy', String(value));
         sortables.forEach(function (sortable) { sortable.option('disabled', value); });
         board.find('[data-modal-form]').attr('aria-disabled', String(value));
+        if (!value) $(document).trigger('workboard:mutation-finished');
     }
     function refresh(text, failed) {
         var horizontal = board.find('.board-scroll').scrollLeft();
@@ -32,6 +32,7 @@
             message(text + ' The board could not be refreshed. Reload before making another change.', true);
             $('<a>').attr('href', board.attr('data-modal-list-url')).addClass('alert-link').text(' Reload board').appendTo(notice);
             setBusy(true);
+            $(document).trigger('workboard:mutation-finished');
         }
     }
     function move(card, status) {
@@ -66,7 +67,10 @@
     function initialize() {
         sortables.forEach(function (sortable) { sortable.destroy(); });
         sortables = [];
+        board = $('#work-board'); notice = $('[data-board-notice]'); busy = false;
+        if (!board.length) return;
         if (typeof Sortable === 'undefined' || board.find('[data-board-archived]').attr('data-board-archived') === 'true') return;
+        board.find('.kanban-board').attr('data-drag-ready', 'true');
         board.find('.kanban-items').each(function () {
             sortables.push(new Sortable(this, {
                 group: 'work-status', sort: false, handle: '.card-drag', draggable: '.work-card',
@@ -94,6 +98,6 @@
     $(document).on('click', '#work-board [data-modal-form]', function (event) {
         if (busy) { event.preventDefault(); event.stopImmediatePropagation(); }
     });
-    $(document).on('workboard:list-updated', function () { initialize(); });
+    $(document).on('workboard:list-updated workboard:workspace-updated', function () { initialize(); });
     initialize();
 })(jQuery);

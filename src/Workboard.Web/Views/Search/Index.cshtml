@@ -3,7 +3,7 @@
 @{ ViewData["Title"] = Model.Options.Project.Key + " search"; ViewData["WorkProject"] = Model.Options.Project; }
 <h1 class="project-text">@Model.Options.Project.Key search</h1>
 @if (Model.Options.Project.IsArchived) { <div class="alert alert-info">This project is archived. Its work remains searchable.</div> }
-<form asp-controller="Search" asp-action="Index" method="get">
+<form data-workspace-get asp-controller="Search" asp-action="Index" method="get">
     <input name="projectId" value="@Model.Options.Project.Id" type="hidden" />
     <div asp-validation-summary="All" class="text-danger" role="alert"></div>
     <div class="row">
@@ -29,7 +29,7 @@
         <div class="col-sm-4 form-group"><div class="checkbox"><label><input asp-for="Input.Archived" /> Search archived work instead of active work</label></div></div>
     </div>
     <button type="submit" class="btn btn-primary">Search</button>
-    <a asp-action="Index" asp-route-projectId="@Model.Options.Project.Id" class="btn btn-default">Clear</a>
+    <a data-workspace-link asp-action="Index" asp-route-projectId="@Model.Options.Project.Id" class="btn btn-default">Clear</a>
 </form>
 <details>
     <summary>Advanced search help</summary>
@@ -44,7 +44,7 @@
     <h2>Results</h2>
     @if (!results.Archived)
     {
-        <p><a asp-controller="Reports" asp-action="Index" asp-route-projectId="@results.Project.Id" asp-route-Input.Expression="@results.Expression" asp-route-Input.Ordering="@results.Ordering" asp-route-Input.Page="@results.Page" asp-route-Input.PageSize="@results.PageSize" class="btn btn-default">Progress for these results</a></p>
+        <p><a data-workspace-link asp-controller="Reports" asp-action="Index" asp-route-projectId="@results.Project.Id" asp-route-Input.Expression="@results.Expression" asp-route-Input.Ordering="@results.Ordering" asp-route-Input.Page="@results.Page" asp-route-Input.PageSize="@results.PageSize" class="btn btn-default">Progress for these results</a></p>
     }
     <p>Expression: <code class="search-expression">@(results.Expression.Length == 0 ? "All work" : results.Expression)</code></p>
     <p>Order: <code>@results.Ordering</code>. @(results.Archived ? "Archived work" : "Active work").</p>
@@ -64,8 +64,8 @@
     }
     <p>Page @results.Page of @results.PageCount (@results.Total @(results.Total == 1 ? "item" : "items"))</p>
     <nav aria-label="Search result pages"><ul class="pager">
-        @if (results.Page > 1) { <li><a asp-action="Index" asp-all-route-data="Model.Routes(results.Page - 1)">Previous</a></li> }
-        @if (results.Page < results.PageCount) { <li><a asp-action="Index" asp-all-route-data="Model.Routes(results.Page + 1)">Next</a></li> }
+        @if (results.Page > 1) { <li><a data-workspace-link asp-action="Index" asp-all-route-data="Model.Routes(results.Page - 1)">Previous</a></li> }
+        @if (results.Page < results.PageCount) { <li><a data-workspace-link asp-action="Index" asp-all-route-data="Model.Routes(results.Page + 1)">Next</a></li> }
     </ul></nav>
 }
 
@@ -82,5 +82,3 @@
     var returnUrl = Context.Request.Path + Context.Request.QueryString;
     <div id="saved-searches" data-modal-list-url="@Url.Action("Index", "SavedSearches", new { projectId = saved.Project.Id, returnUrl })"><partial name="~/Views/SavedSearches/_List.cshtml" model="new SavedSearchListViewModel(saved, returnUrl)" /></div>
 }
-<partial name="~/Views/Shared/_ContextModal.cshtml" />
-@section Scripts { <script src="~/js/context-modal.js" asp-append-version="true"></script> }

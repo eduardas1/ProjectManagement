@@ -8,9 +8,3 @@
 <div id="work-board" data-modal-list-url="@Url.Action("Board", new { projectId = Model.Project.Id })">
     <partial name="_Board" model="Model" />
 </div>
-<partial name="~/Views/Shared/_ContextModal.cshtml" />
-@section Scripts {
-    <script src="~/lib/sortable/Sortable.min.js"></script>
-    <script src="~/js/context-modal.js" asp-append-version="true"></script>
-    <script src="~/js/board.js" asp-append-version="true"></script>
-}

@@ -4,12 +4,29 @@
     if (!panel.length) return;
     var body = panel.find('[data-preview-body]');
     var error = panel.find('[data-preview-error]');
-    var request = null;
-    var generation = 0;
-    var trigger = null;
-    var source = null;
+    var main = $('main[data-workspace-project]');
+    var content = main.find('[data-workspace-content]');
+    var notice = main.find('[data-workspace-notice]');
+    var request = null, navigation = null;
+    var generation = 0, navigationGeneration = 0;
+    var trigger = null, source = null;
+    var contentUrl = window.location.href;
+    var waitingForHistory = false;
     var phone = window.matchMedia('(max-width: 767px)');
 
+    function workspaceUrl(value) {
+        var url = new URL(value, window.location.href);
+        var supported = /^\/WorkItems(?:\/(?:Index|Backlog|Cancelled|Board))?$/.test(url.pathname)
+            || /^\/(?:Search|Reports)(?:\/Index)?$/.test(url.pathname);
+        return url.origin === window.location.origin && supported
+            && url.searchParams.get('projectId') === main.attr('data-workspace-project') ? url : null;
+    }
+    function setActive(url) {
+        $('.project-navigation li').removeClass('active').find('a').removeAttr('aria-current');
+        $('.project-navigation a').each(function () {
+            if (new URL(this.href).pathname === new URL(url).pathname) $(this).parent().addClass('active').find('a').attr('aria-current', 'page');
+        });
+    }
     function syncPhone() {
         var modal = phone.matches && !panel.hasClass('hidden');
         panel.attr('aria-modal', String(modal));
@@ -25,18 +42,68 @@
         if (trigger && document.contains(trigger)) trigger.focus({preventScroll: true});
         if (source) window.scrollTo(window.scrollX, source.scroll);
     }
-    function local(value) {
+    function cancelNavigation() {
+        navigationGeneration++;
+        if (navigation) navigation.abort();
+        navigation = null; content.attr('aria-busy', 'false'); notice.addClass('hidden');
+    }
+    function rememberPosition() {
+        if (!window.history.state || !window.history.state.workboardPreview)
+            window.history.replaceState({workboardWorkspace: true, scroll: window.scrollY}, '', window.location.href);
+    }
+    function navigate(url, push, scroll, after) {
+        var target = workspaceUrl(url);
+        if (!target) { window.location.assign(url); return; }
+        if (push) rememberPosition();
+        cancelNavigation();
+        var current = navigationGeneration;
+        content.attr('aria-busy', 'true');
+        notice.removeClass('hidden alert-danger').addClass('alert-info').text('Loading work…');
+        navigation = $.ajax({url: target.href, method: 'GET', headers: {'X-Workboard-View': 'workspace'}}).done(function (html, status, xhr) {
+            if (current !== navigationGeneration) return;
+            if (xhr.getResponseHeader('X-Workboard-Partial') !== 'workspace') { fail('The server did not return the expected project view.'); return; }
+            apply(html);
+        }).fail(function (xhr, status) {
+            if (status === 'abort' || current !== navigationGeneration) return;
+            if (xhr.status === 400 && xhr.getResponseHeader('X-Workboard-Partial') === 'workspace') { apply(xhr.responseText); return; }
+            fail(xhr.status === 401 ? 'Your session has ended. Sign in again to continue.' : 'The project view could not be loaded. Your current view has been kept.');
+        }).always(function () { if (current === navigationGeneration) { navigation = null; content.attr('aria-busy', 'false'); } });
+        function apply(html) {
+            var replacePreview = window.history.state && window.history.state.workboardPreview;
+            close(); source = null; trigger = null;
+            content.empty().append($.parseHTML(html, document, false));
+            contentUrl = target.href;
+            if (push) {
+                if (replacePreview) window.history.replaceState({workboardWorkspace: true, scroll: 0}, '', target.href);
+                else window.history.pushState({workboardWorkspace: true, scroll: 0}, '', target.href);
+            }
+            var heading = content.find('h1').first();
+            if (heading.length) document.title = heading.text() + ' - Workboard';
+            setActive(target.href); notice.addClass('hidden');
+            if (phone.matches) $('#project-navigation').collapse('hide');
+            $(document).trigger('workboard:workspace-updated');
+            window.scrollTo(window.scrollX, scroll || 0);
+            if (heading.length && !after) heading.attr('tabindex', '-1')[0].focus({preventScroll: true});
+            if (after) after();
+        }
+        function fail(text) {
+            notice.removeClass('hidden alert-info').addClass('alert-danger').text(text + ' ');
+            $('<a>').attr('href', target.href).addClass('alert-link').text('Open full page').appendTo(notice);
+        }
+    }
+    function localItem(value) {
         var url = new URL(value, window.location.href);
         if (url.origin !== window.location.origin || !/^\/WorkItems\/Details\/\d+$/.test(url.pathname)) return null;
         return url;
     }
     function open(url, updateHistory) {
+        cancelNavigation();
         var current = ++generation;
         if (request) request.abort();
         if (updateHistory) {
             var state = {workboardPreview: true, context: source.url, scroll: source.scroll};
             if (window.history.state && window.history.state.workboardPreview) window.history.replaceState(state, '', url);
-            else window.history.pushState(state, '', url);
+            else { rememberPosition(); window.history.pushState(state, '', url); }
         }
         panel.removeClass('hidden'); error.addClass('hidden').text(''); body.text('Loading work item…');
         panel.find('[data-preview-full]').attr('href', url);
@@ -51,13 +118,27 @@
         }).always(function () { if (generation === current) { request = null; panel.attr('aria-busy', 'false'); } });
         function fail(text) { body.empty(); error.removeClass('hidden').text(text); }
     }
+    function ordinary(event) { return !event.button && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey; }
     $(document).on('click', 'a[data-work-preview]', function (event) {
-        if (event.button || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || $('#context-modal').hasClass('in')) return;
-        var url = local(this.href);
+        if (!ordinary(event) || $('#context-modal').hasClass('in')) return;
+        var url = localItem(this.href);
         if (!url) return;
         event.preventDefault();
-        if (panel.hasClass('hidden')) { source = {url: window.location.href, scroll: window.scrollY}; trigger = this; }
+        if (panel.hasClass('hidden')) { source = {url: contentUrl, scroll: window.scrollY}; trigger = this; }
         open(url.href, true);
+    });
+    $(document).on('click', 'a[data-workspace-link]', function (event) {
+        if (!ordinary(event) || !workspaceUrl(this.href)) return;
+        event.preventDefault();
+        if ($('#context-modal').hasClass('in') || $('.kanban-board.is-saving').length) return;
+        navigate(this.href, true, 0);
+    });
+    $(document).on('submit', 'form[data-workspace-get]', function (event) {
+        var url = new URL(this.action, window.location.href);
+        url.search = $(this).serialize();
+        if (!workspaceUrl(url.href)) return;
+        event.preventDefault();
+        navigate(url.href, true, 0);
     });
     function dismiss() {
         if (window.history.state && window.history.state.workboardPreview) window.history.back();
@@ -72,15 +153,29 @@
         if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
         else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     });
+    function restoreHistory(state) {
+        cancelNavigation();
+        if (state && state.workboardPreview) {
+            var item = localItem(window.location.href);
+            if (!item) { close(); return; }
+            function preview() { source = {url: state.context, scroll: state.scroll}; open(item.href, false); }
+            if (contentUrl !== state.context) navigate(state.context, false, state.scroll, preview);
+            else preview();
+        } else if (contentUrl === window.location.href) { close(); if (state) window.scrollTo(window.scrollX, state.scroll || 0); }
+        else if (workspaceUrl(window.location.href)) navigate(window.location.href, false, state ? state.scroll : 0);
+        else window.location.reload();
+    }
     window.addEventListener('popstate', function (event) {
-        if (event.state && event.state.workboardPreview) {
-            source = {url: event.state.context, scroll: event.state.scroll};
-            var url = local(window.location.href);
-            if (url) open(url.href, false); else close();
-        } else close();
+        if ($('#context-modal').hasClass('in') || $('.kanban-board.is-saving').length) { waitingForHistory = true; return; }
+        restoreHistory(event.state);
     });
+    function resumeHistory() {
+        if (!waitingForHistory || $('#context-modal').hasClass('in')) return;
+        waitingForHistory = false; restoreHistory(window.history.state);
+    }
+    $(document).on('workboard:mutation-finished', resumeHistory);
+    $('#context-modal').on('show.bs.modal', cancelNavigation).on('hidden.bs.modal', resumeHistory);
     phone.addEventListener('change', syncPhone);
-    $('.project-navigation a').each(function () {
-        if (new URL(this.href).pathname === window.location.pathname) $(this).parent().addClass('active').find('a').attr('aria-current', 'page');
-    });
+    if (workspaceUrl(window.location.href)) rememberPosition();
+    setActive(window.location.href);
 })(jQuery);

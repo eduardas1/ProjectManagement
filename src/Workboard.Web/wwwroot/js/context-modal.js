@@ -6,6 +6,9 @@
     var error = modal.find('[data-modal-error]');
     var notice = $('[data-modal-notice]');
     var list = $('[data-modal-list-url]');
+    $(document).on('workboard:workspace-updated', function () {
+        list = $('[data-modal-list-url]'); notice = $('[data-modal-notice]');
+    });
     function focusList() { var heading = $('[data-modal-focus]')[0]; if (heading) heading.focus({preventScroll: true}); }
     var trigger = null;
     var pending = false;
@@ -80,21 +83,23 @@
     modal.on('submit', 'form[data-modal-submit]', function (event) {
         event.preventDefault(); if (pending) return;
         var form = $(this); var submitted = form.serialize();
+        var targetList = list, targetNotice = notice;
         pending = true; error.addClass('hidden').text(''); form.find('[type=submit]').prop('disabled', true);
         $.ajax({url: localUrl(this.action), method: 'POST', data: submitted}).done(function (data) {
             if (!data || data.saved !== true) { showError('The server did not confirm this change. Check the saved list before trying again.'); return; }
             pending = false; modal.modal('hide');
-            notice.removeClass('hidden alert-danger').addClass('alert-success').text(data.message || 'Change saved.');
+            targetNotice.removeClass('hidden alert-danger').addClass('alert-success').text(data.message || 'Change saved.');
             var position = window.scrollY;
-            $.ajax({url: localUrl(list.attr('data-modal-list-url')), method: 'GET'}).done(function (html, status, xhr) {
+            $.ajax({url: localUrl(targetList.attr('data-modal-list-url')), method: 'GET'}).done(function (html, status, xhr) {
                 if (xhr.getResponseHeader('X-Workboard-Partial') !== 'list') { refreshFailed(); return; }
-                list.empty().append($.parseHTML(html, document, false));
+                if (!targetList.length || !document.contains(targetList[0])) return;
+                targetList.empty().append($.parseHTML(html, document, false));
                 $(document).trigger('workboard:list-updated');
                 window.scrollTo(window.scrollX, position);
                 if (!trigger || !document.contains(trigger)) focusList();
             }).fail(refreshFailed);
             function refreshFailed() {
-                notice.removeClass('alert-success').addClass('alert-danger').text('Your change was saved, but the list could not be refreshed. Reload this page to see it.');
+                targetNotice.removeClass('alert-success').addClass('alert-danger').text('Your change was saved, but the list could not be refreshed. Reload this page to see it.');
             }
         }).fail(function (xhr) {
             if ([400, 409, 503].indexOf(xhr.status) !== -1 && xhr.getResponseHeader('X-Workboard-Partial') === 'modal') {

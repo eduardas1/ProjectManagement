@@ -6,5 +6,3 @@
 <div id="saved-searches" data-modal-list-url="@Url.Action("Index", "SavedSearches", new { projectId = Model.Searches.Project.Id, returnUrl = Model.ReturnUrl })">
     <partial name="_List" model="Model" />
 </div>
-<partial name="~/Views/Shared/_ContextModal.cshtml" />
-@section Scripts { <script src="~/js/context-modal.js" asp-append-version="true"></script> }

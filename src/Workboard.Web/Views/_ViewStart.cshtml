@@ -1,3 +1,12 @@
-﻿@{
+@{
     Layout = "_Layout";
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+    var workspace = controller == "WorkItems" && new[] { "Index", "Backlog", "Cancelled", "Board" }.Contains(action)
+        || (controller == "Search" || controller == "Reports") && action == "Index";
+    if (Context.Request.Method == "GET" && workspace && Context.Request.Headers["X-Workboard-View"] == "workspace")
+    {
+        Layout = null;
+        Context.Response.Headers["X-Workboard-Partial"] = "workspace";
+    }
 }

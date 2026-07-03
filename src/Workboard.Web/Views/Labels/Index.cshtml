@@ -5,5 +5,3 @@
 <div id="project-labels" data-modal-list-url="@Url.Action("Index", "Labels", new { projectId = Model.Project.Id })">
     <partial name="_List" model="Model" />
 </div>
-<partial name="~/Views/Shared/_ContextModal.cshtml" />
-@section Scripts { <script src="~/js/context-modal.js" asp-append-version="true"></script> }

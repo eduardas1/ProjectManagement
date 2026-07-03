@@ -39,7 +39,7 @@ public class WorkItemsController(ISender sender) : Controller
         if (!ModelState.IsValid) return BadRequest("Invalid board request.");
         var board = await sender.Send(new GetWorkBoardQuery(projectId), cancellationToken);
         if (board == null) return NotFound();
-        if (!IsAjax) return View(board);
+        if (!IsAjax || Request.Headers["X-Workboard-View"] == "workspace") return View(board);
         Response.Headers["X-Workboard-Partial"] = "list";
         return PartialView("_Board", board);
     }

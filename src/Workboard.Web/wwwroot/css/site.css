@@ -55,7 +55,7 @@ code {
 .card-title { font-weight: 500; }
 .card-title > a { color: #333; }
 .card-meta { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-.card-drag { cursor: grab; min-width: 28px; min-height: 28px; touch-action: none; }
+.card-drag { display: none; cursor: grab; min-width: 28px; min-height: 28px; touch-action: none; }
 .work-card.is-pending { opacity: .6; }
 .work-card.sortable-ghost { opacity: .3; }
 .kanban-column.is-drop-target { border-color: #337ab7; background: #eaf2f8; }
@@ -91,3 +91,5 @@ code {
     .preview-toolbar .btn { min-width: 44px; min-height: 44px; }
     .preview-body .dl-horizontal dt { margin-top: 10px; }
 }
+
+[data-drag-ready] .card-drag { display: inline-block; }

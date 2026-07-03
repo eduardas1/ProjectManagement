@@ -1,31 +1,5 @@
-@using Workboard.Application.WorkItems
 @model WorkItemStatusViewModel
-@{
-    ViewData["Title"] = "Change status";
-    var choices = WorkItemWorkflow.AllowedStatuses(Model.Details.Item.Status).Prepend(Model.Details.Item.Status).ToList();
-    var returnUrl = !string.IsNullOrEmpty(Model.ReturnUrl) && Model.ReturnUrl.Length <= ReturnNavigation.MaxLength && Url.IsLocalUrl(Model.ReturnUrl)
-        ? Model.ReturnUrl : Url.Action("Details", new { projectId = Model.ProjectId, id = Model.WorkItemId });
-}
+@{ ViewData["Title"] = "Change status"; ViewData["WorkProject"] = Model.Details.Project; }
 <h1 class="project-text">Change @Model.Details.Project.Key-@Model.Details.Item.Number status</h1>
-<p class="project-text">@Model.Details.Item.Title</p>
-<p>Current status: <strong>@Model.Details.Item.Status</strong></p>
-<div class="row"><div class="col-md-6">
-<form asp-action="Status" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" method="post">
-    <input asp-for="ProjectId" type="hidden" /><input asp-for="WorkItemId" type="hidden" /><input asp-for="ExpectedVersion" type="hidden" />
-    <input asp-for="ReturnUrl" type="hidden" />
-    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
-    <div class="form-group"><label asp-for="Status">Status</label>
-        <select asp-for="Status" class="form-control"><option value="">Select a status</option>
-            @if (Model.Status.HasValue && !choices.Contains(Model.Status.Value))
-            { <option value="@((int)Model.Status.Value)">@Model.Status (submitted)</option> }
-            @foreach (var status in choices) { <option value="@((int)status)">@status</option> }
-        </select><span asp-validation-for="Status" class="text-danger"></span>
-    </div>
-    @if (!Model.Details.Project.IsArchived && !Model.Details.Item.IsArchived)
-    { <button type="submit" class="btn btn-primary">Save status</button> }
-    else { <p>This @(Model.Details.Project.IsArchived ? "project" : "work item") is archived.</p> }
-    <a href="@returnUrl" class="btn btn-default">Cancel</a>
-    <a asp-action="Status" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" asp-route-returnUrl="@returnUrl">Reload current version</a>
-</form>
-</div></div>
+<div class="row"><div class="col-md-6"><partial name="_Status" model="Model" /></div></div>
 @section Scripts { <partial name="_ValidationScriptsPartial" /> }

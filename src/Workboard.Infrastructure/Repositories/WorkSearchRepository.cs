@@ -44,7 +44,7 @@ public class WorkSearchRepository(ApplicationDbContext context, ICurrentUser cur
         var ordered = ((IOrderedQueryable<WorkItem>)query.ApplyOrdering(ordering, mapper)).ThenBy(work => work.Id);
         var items = await ordered.Skip(checked((page - 1) * input.PageSize)).Take(input.PageSize)
             .Select(work => new WorkItemSummary(work.Id, work.Number, work.Title, work.Type, work.Status, work.Priority,
-                context.Users.Where(user => user.Id == work.AssigneeId).Select(user => user.Email).SingleOrDefault(), work.DueDate))
+                context.Users.Where(user => user.Id == work.AssigneeId).Select(user => user.Email).SingleOrDefault(), work.DueDate, work.Version))
             .ToListAsync(cancellationToken);
         return OperationResult<WorkSearchPage>.Success(new WorkSearchPage(selection.Project, selection.Expression, ordering,
             input.Archived, page, input.PageSize, pages, total, items));

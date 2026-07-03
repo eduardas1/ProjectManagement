@@ -1,0 +1,34 @@
+@using Workboard.Application.WorkItems
+@model WorkBoard
+<form data-board-token class="hidden">@Html.AntiForgeryToken()</form>
+<div class="board-scroll" tabindex="0" aria-label="Work board columns">
+<div class="kanban-board" data-board-project="@Model.Project.Id" data-board-archived="@Model.Project.IsArchived.ToString().ToLowerInvariant()">
+@foreach (var column in Model.Columns)
+{
+    <section class="kanban-column" data-column="@((int)column.Status)">
+        <h2 tabindex="-1" data-modal-focus>@column.Status <small>(@column.Total)</small></h2>
+        <div class="kanban-items" data-status="@((int)column.Status)" aria-label="@column.Status work items">
+        @foreach (var work in column.Items)
+        {
+            <article class="panel panel-default work-card" id="work-@work.Id" data-work-id="@work.Id" data-version="@work.Version"
+                data-allowed="@string.Join(",", WorkItemWorkflow.AllowedStatuses(work.Status).Select(status => (int)status))"
+                data-status-url="@Url.Action("Status", new { projectId = Model.Project.Id, id = work.Id })">
+            <div class="panel-body">
+                <div class="card-key"><a data-work-preview asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@work.Id">@Model.Project.Key-@work.Number</a>
+                @if (!Model.Project.IsArchived) { <button type="button" class="btn btn-default btn-xs card-drag" aria-label="Drag @Model.Project.Key-@work.Number to another status" title="Drag to another status" tabindex="-1"><span aria-hidden="true" class="glyphicon glyphicon-move"></span></button> }
+                </div>
+                <p class="project-text card-title"><a data-work-preview asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@work.Id">@work.Title</a></p>
+                <p class="card-meta"><span class="label label-default">@work.Type</span> <span>@work.Priority</span></p>
+                <p class="project-text text-muted">@(work.Assignee ?? "Unassigned")</p>
+                @if (work.DueDate.HasValue) { <p>Due @work.DueDate.Value.ToString("yyyy-MM-dd")</p> }
+                @if (!Model.Project.IsArchived)
+                { <a data-modal-form data-modal-title="Change status" asp-action="Status" asp-route-projectId="@Model.Project.Id" asp-route-id="@work.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">Change status<span class="sr-only"> for @Model.Project.Key-@work.Number</span></a> }
+            </div></article>
+        }
+        </div>
+        @if (column.Total == 0) { <p class="text-muted board-empty">No work items.</p> }
+        @if (column.Total > column.Items.Count)
+        { <p><a asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-status="@column.Status">View all @column.Total @column.Status items</a></p> }
+    </section>
+}
+</div></div>

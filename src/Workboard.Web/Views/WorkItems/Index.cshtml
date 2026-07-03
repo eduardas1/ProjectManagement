@@ -1,9 +1,8 @@
 @using Workboard.Domain.Enums
 @model Workboard.Application.WorkItems.WorkItemList
-@{ ViewData["Title"] = Model.Project.Key + " work"; }
+@{ ViewData["Title"] = Model.Project.Key + " work"; ViewData["WorkProject"] = Model.Project; }
 <h1 class="project-text">@Model.Project.Key work</h1>
 @if (Model.Project.IsArchived) { <div class="alert alert-info">This project is archived.</div> }
-<partial name="_WorkNavigation" model="Model.Project" />
 <p><a asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-status="@Model.Status" asp-route-archived="@(!Model.Archived)" class="btn btn-default">@(Model.Archived ? "Active work" : "Archived work")</a></p>
 <form asp-action="Index" method="get" class="form-inline">
     <input name="projectId" value="@Model.Project.Id" type="hidden" /><input name="archived" value="@Model.Archived.ToString().ToLowerInvariant()" type="hidden" />
@@ -23,7 +22,7 @@ else
         <tbody>
         @foreach (var work in Model.Items)
         {
-            <tr><td><a asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@work.Id">@Model.Project.Key-@work.Number</a></td>
+            <tr><td><a data-work-preview asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@work.Id">@Model.Project.Key-@work.Number</a></td>
                 <td class="project-text">@work.Title</td><td>@work.Type</td><td>@work.Status</td><td>@work.Priority</td><td>@(work.Assignee ?? "Unassigned")</td><td>@(work.DueDate?.ToString("yyyy-MM-dd") ?? "None")</td>
                 @if (!Model.Archived && !Model.Project.IsArchived)
                 { <td><a asp-action="Status" asp-route-projectId="@Model.Project.Id" asp-route-id="@work.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">Change status<span class="sr-only"> for @Model.Project.Key-@work.Number</span></a></td> }

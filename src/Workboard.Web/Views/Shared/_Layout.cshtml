@@ -1,3 +1,4 @@
+@{ var project = ViewData["WorkProject"] as Workboard.Application.WorkItems.WorkProject; }
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,7 +11,7 @@
 </head>
 <body>
     <nav class="navbar navbar-default">
-        <div class="container">
+        <div class="container-fluid">
             <div class="navbar-header">
                 <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navigation" aria-expanded="false" aria-controls="navigation">
                     <span class="sr-only">Toggle navigation</span>
@@ -46,7 +47,9 @@
             </div>
         </div>
     </nav>
-    <main class="container">
+    <div class="@(project == null ? "" : "project-workspace")">
+    @if (project != null) { <aside class="project-sidebar"><partial name="~/Views/WorkItems/_WorkNavigation.cshtml" model="project" /></aside> }
+    <main class="@(project == null ? "container" : "workspace-main")">
         @if (TempData["Success"] is string success && Context.Response.StatusCode < 400)
         {
             <div class="alert alert-success" role="status">@success</div>
@@ -57,8 +60,11 @@
         }
         @RenderBody()
     </main>
+    </div>
+    @if (project != null) { <partial name="_WorkPreview" /> }
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.js"></script>
+    @if (project != null) { <script src="~/js/workspace.js" asp-append-version="true"></script> }
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

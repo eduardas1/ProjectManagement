@@ -38,7 +38,10 @@ public class WorkItemsController(ISender sender) : Controller
     {
         if (!ModelState.IsValid) return BadRequest("Invalid board request.");
         var board = await sender.Send(new GetWorkBoardQuery(projectId), cancellationToken);
-        return board == null ? NotFound() : View(board);
+        if (board == null) return NotFound();
+        if (!IsAjax) return View(board);
+        Response.Headers["X-Workboard-Partial"] = "list";
+        return PartialView("_Board", board);
     }
 
     [HttpGet]
@@ -48,7 +51,7 @@ public class WorkItemsController(ISender sender) : Controller
         if (details == null) return NotFound();
         if (returnUrl != null && (returnUrl.Length > ReturnNavigation.MaxLength || !Url.IsLocalUrl(returnUrl))) return BadRequest("Return address must be local.");
         if (details.Project.IsArchived || details.Item.IsArchived) return RedirectToAction(nameof(Details), new { projectId, id });
-        return View(new WorkItemStatusViewModel { ProjectId = projectId, WorkItemId = id,
+        return StatusForm(new WorkItemStatusViewModel { ProjectId = projectId, WorkItemId = id,
             ExpectedVersion = details.Item.Version, Details = details, ReturnUrl = returnUrl });
     }
 
@@ -66,20 +69,24 @@ public class WorkItemsController(ISender sender) : Controller
             if (result.Status == OperationStatus.NotFound) return NotFound();
             if (result.Status == OperationStatus.Success)
             {
+                if (IsAjax) return Json(new { saved = true, message = "Work status saved." });
                 TempData["Success"] = "Work status saved.";
                 return model.ReturnUrl == null ? RedirectToAction(nameof(Details), new { projectId, id }) : LocalRedirect(model.ReturnUrl);
             }
             ApplyError(result);
         }
         else Response.StatusCode = StatusCodes.Status400BadRequest;
-        return View(model);
+        return StatusForm(model);
     }
 
     [HttpGet]
     public async Task<IActionResult> Details([FromQuery] int projectId, [FromRoute] int id, CancellationToken cancellationToken)
     {
         var work = await sender.Send(new GetWorkItemQuery(projectId, id), cancellationToken);
-        return work == null ? NotFound() : View(work);
+        if (work == null) return NotFound();
+        if (Request.Headers["X-Workboard-View"] != "preview") return View(work);
+        Response.Headers["X-Workboard-Partial"] = "preview";
+        return PartialView("_Details", work);
     }
 
     [HttpGet]
@@ -299,6 +306,15 @@ public class WorkItemsController(ISender sender) : Controller
         }
         else Response.StatusCode = StatusCodes.Status400BadRequest;
         return View(model);
+    }
+
+    private bool IsAjax => Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+
+    private IActionResult StatusForm(WorkItemStatusViewModel model)
+    {
+        if (!IsAjax) return View("Status", model);
+        Response.Headers["X-Workboard-Partial"] = "modal";
+        return PartialView("_Status", model);
     }
 
     private void ApplyError(OperationResult<int> result)

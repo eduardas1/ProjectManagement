@@ -48,6 +48,7 @@
     }
     $(document).on('click', 'a[data-modal-form]', function (event) {
         event.preventDefault();
+        if ($(this).attr('aria-disabled') === 'true') return;
         begin(this, $(this).attr('data-modal-title'), {url: localUrl(this.href), method: 'GET'});
     });
     $(document).on('submit', 'form[data-modal-open]', function (event) {
@@ -88,6 +89,7 @@
             $.ajax({url: localUrl(list.attr('data-modal-list-url')), method: 'GET'}).done(function (html, status, xhr) {
                 if (xhr.getResponseHeader('X-Workboard-Partial') !== 'list') { refreshFailed(); return; }
                 list.empty().append($.parseHTML(html, document, false));
+                $(document).trigger('workboard:list-updated');
                 window.scrollTo(window.scrollX, position);
                 if (!trigger || !document.contains(trigger)) focusList();
             }).fail(refreshFailed);

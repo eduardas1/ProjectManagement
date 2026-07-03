@@ -35,7 +35,7 @@ public class WorkItemReadRepository(ApplicationDbContext context, ICurrentUser c
         page = Math.Clamp(page, 1, pages);
         var items = await query.OrderBy(work => work.Number).ThenBy(work => work.Id).Skip((page - 1) * 20).Take(20)
             .Select(work => new WorkItemSummary(work.Id, work.Number, work.Title, work.Type, work.Status, work.Priority,
-                context.Users.Where(user => user.Id == work.AssigneeId).Select(user => user.Email).SingleOrDefault(), work.DueDate))
+                context.Users.Where(user => user.Id == work.AssigneeId).Select(user => user.Email).SingleOrDefault(), work.DueDate, work.Version))
             .ToListAsync(cancellationToken);
         return new WorkItemList(project, archived, page, pages, total, items, status);
     }
@@ -49,7 +49,7 @@ public class WorkItemReadRepository(ApplicationDbContext context, ICurrentUser c
                     || work.Status == WorkItemStatus.InReview || work.Status == WorkItemStatus.Done))
             .OrderBy(work => work.Number).ThenBy(work => work.Id)
             .Select(work => new WorkItemSummary(work.Id, work.Number, work.Title, work.Type, work.Status, work.Priority,
-                context.Users.Where(user => user.Id == work.AssigneeId).Select(user => user.Email).SingleOrDefault(), work.DueDate))
+                context.Users.Where(user => user.Id == work.AssigneeId).Select(user => user.Email).SingleOrDefault(), work.DueDate, work.Version))
             .ToListAsync(cancellationToken);
         var columns = new[] { WorkItemStatus.Todo, WorkItemStatus.InProgress, WorkItemStatus.InReview, WorkItemStatus.Done }
             .Select(status =>

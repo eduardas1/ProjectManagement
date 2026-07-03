@@ -8,7 +8,7 @@ public record WorkAccount(string Id, string Email);
 public record LabelSummary(int Id, string Name, long Version, int UsageCount);
 public record RelatedWork(int Id, int Number, string Title, WorkItemType Type, bool IsArchived);
 public record WorkItemSummary(int Id, int Number, string Title, WorkItemType Type, WorkItemStatus Status,
-    WorkItemPriority Priority, string? Assignee, DateOnly? DueDate);
+    WorkItemPriority Priority, string? Assignee, DateOnly? DueDate, long Version = 0);
 public record WorkItemConnection(int TargetId, int Number, string Title, bool IsArchived, WorkItemLinkKind Kind, bool IsOutgoing);
 public record WorkHistory(string Actor, DateTime OccurredAtUtc, string Summary, string DetailsJson);
 public record WorkItemOptions(WorkProject Project, IReadOnlyList<WorkAccount> Members,

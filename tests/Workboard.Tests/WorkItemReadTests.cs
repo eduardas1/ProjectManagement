@@ -147,7 +147,7 @@ public class WorkItemReadTests
                 ProjectId = projectId, Number = number, Title = "Work " + number, CreatedById = "owner",
                 Type = number == 1 ? WorkItemType.Epic : WorkItemType.Task, IsArchived = number == 28,
                 Status = number <= 22 || number == 28 ? WorkItemStatus.Todo : (number == 27 ? WorkItemStatus.Backlog : (WorkItemStatus)(number - 21)),
-                CreatedAtUtc = DateTime.UtcNow, UpdatedAtUtc = DateTime.UtcNow
+                Version = number + 10, CreatedAtUtc = DateTime.UtcNow, UpdatedAtUtc = DateTime.UtcNow
             }));
             setup.WorkItems.Add(new WorkItem { ProjectId = foreignProject, Number = 1, Title = "Secret", CreatedById = "owner",
                 Status = WorkItemStatus.Todo, CreatedAtUtc = DateTime.UtcNow, UpdatedAtUtc = DateTime.UtcNow });
@@ -171,6 +171,7 @@ public class WorkItemReadTests
         Assert.Equal(Enumerable.Range(1, 20), board.Columns[0].Items.Select(item => item.Number));
         Assert.Equal(WorkItemType.Epic, board.Columns[0].Items[0].Type);
         Assert.Equal(todo!.Items, board.Columns[0].Items);
+        Assert.Equal(Enumerable.Range(11, 20).Select(version => (long)version), board.Columns[0].Items.Select(item => item.Version));
         Assert.Equal(22, todo.Total);
         Assert.Equal(WorkItemStatus.Todo, todo.Status);
         Assert.Equal(2, last!.Page);

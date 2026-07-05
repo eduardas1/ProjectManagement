@@ -42,7 +42,7 @@ code {
 .workspace-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
 .workspace-heading > div { min-width: 0; }
 .workspace-heading > a { flex-shrink: 0; }
-.board-scroll { overflow-x: auto; padding-bottom: 12px; }
+.board-scroll { position: relative; overflow-x: auto; padding-bottom: 12px; }
 .kanban-board { display: grid; grid-template-columns: repeat(4, minmax(240px, 1fr)); gap: 16px; }
 .kanban-column { min-width: 0; border-radius: 4px; padding: 12px; background: #f5f5f5; border: 1px solid #ddd; }
 .kanban-column > h2 { margin: 0 0 16px; font-size: 17px; font-weight: 600; }
@@ -93,3 +93,6 @@ code {
 }
 
 [data-drag-ready] .card-drag { display: inline-block; }
+
+.workspace-main .table .project-text { white-space: normal; min-width: 14em; max-width: 38em; }
+.workspace-main .table th:first-child, .workspace-main .table td:first-child { white-space: nowrap; }

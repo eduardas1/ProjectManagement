@@ -31,7 +31,7 @@
     function focusForm() {
         var invalid = body.find('.validation-summary-errors').first();
         if (invalid.length) invalid.trigger('focus');
-        else body.find('input:not([type=hidden]),button[type=submit],a').filter(':visible').first().trigger('focus');
+        else body.find('input:not([type=hidden]),select,textarea,button[type=submit],a').filter(':visible').first().trigger('focus');
     }
     function begin(element, title, request) {
         if (modal.hasClass('in') || pending) return;
@@ -76,7 +76,7 @@
     });
     modal.on('hidden.bs.modal', function () {
         body.empty(); error.addClass('hidden').text('');
-        if (trigger && document.contains(trigger)) $(trigger).trigger('focus');
+        if (trigger && document.contains(trigger)) trigger.focus({preventScroll: true});
         else focusList();
     });
     modal.on('click', '[data-modal-cancel]', function (event) { event.preventDefault(); modal.modal('hide'); });
@@ -87,9 +87,9 @@
         pending = true; error.addClass('hidden').text(''); form.find('[type=submit]').prop('disabled', true);
         $.ajax({url: localUrl(this.action), method: 'POST', data: submitted}).done(function (data) {
             if (!data || data.saved !== true) { showError('The server did not confirm this change. Check the saved list before trying again.'); return; }
+            var position = window.scrollY;
             pending = false; modal.modal('hide');
             targetNotice.removeClass('hidden alert-danger').addClass('alert-success').text(data.message || 'Change saved.');
-            var position = window.scrollY;
             $.ajax({url: localUrl(targetList.attr('data-modal-list-url')), method: 'GET'}).done(function (html, status, xhr) {
                 if (xhr.getResponseHeader('X-Workboard-Partial') !== 'list') { refreshFailed(); return; }
                 if (!targetList.length || !document.contains(targetList[0])) return;

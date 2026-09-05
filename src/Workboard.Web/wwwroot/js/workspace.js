@@ -12,6 +12,16 @@
     var trigger = null, source = null;
     var contentUrl = window.location.href;
     var waitingForHistory = false;
+    var viewStates = Object.create(null);
+
+    function captureView() {
+        var capture = $('#work-board').data('capture-scroll');
+        return {scroll: window.scrollY, boardScroll: typeof capture === 'function' ? capture() : null};
+    }
+    function restoreBoard(state) {
+        var restore = $('#work-board').data('restore-scroll');
+        if (typeof restore === 'function') restore(state);
+    }
     var phone = window.matchMedia('(max-width: 767px)');
 
     function workspaceUrl(value) {
@@ -48,10 +58,15 @@
         navigation = null; content.attr('aria-busy', 'false'); notice.addClass('hidden');
     }
     function rememberPosition() {
-        if (!window.history.state || !window.history.state.workboardPreview)
-            window.history.replaceState({workboardWorkspace: true, scroll: window.scrollY}, '', window.location.href);
+        var saved = captureView();
+        viewStates[contentUrl] = saved;
+        if (window.history.state && window.history.state.workboardPreview) {
+            var preview = Object.assign({}, window.history.state, saved);
+            window.history.replaceState(preview, '', window.location.href);
+            if (source) { source.scroll = saved.scroll; source.boardScroll = saved.boardScroll; }
+        } else if (workspaceUrl(window.location.href)) window.history.replaceState(Object.assign({workboardWorkspace: true}, saved), '', window.location.href);
     }
-    function navigate(url, push, scroll, after) {
+    function navigate(url, push, scroll, after, boardScroll) {
         var target = workspaceUrl(url);
         if (!target) { window.location.assign(url); return; }
         if (push) rememberPosition();
@@ -74,14 +89,15 @@
             content.empty().append($.parseHTML(html, document, false));
             contentUrl = target.href;
             if (push) {
-                if (replacePreview) window.history.replaceState({workboardWorkspace: true, scroll: 0}, '', target.href);
-                else window.history.pushState({workboardWorkspace: true, scroll: 0}, '', target.href);
+                if (replacePreview) window.history.replaceState({workboardWorkspace: true, scroll: 0, boardScroll: viewStates[target.href] ? viewStates[target.href].boardScroll : null}, '', target.href);
+                else window.history.pushState({workboardWorkspace: true, scroll: 0, boardScroll: viewStates[target.href] ? viewStates[target.href].boardScroll : null}, '', target.href);
             }
             var heading = content.find('h1').first();
             if (heading.length) document.title = heading.text() + ' - Workboard';
             setActive(target.href); notice.addClass('hidden');
             if (phone.matches) $('#project-navigation').collapse('hide');
             $(document).trigger('workboard:workspace-updated');
+            restoreBoard(boardScroll || (viewStates[target.href] ? viewStates[target.href].boardScroll : null));
             window.scrollTo(window.scrollX, scroll || 0);
             if (heading.length && !after) heading.attr('tabindex', '-1')[0].focus({preventScroll: true});
             if (after) after();
@@ -101,7 +117,8 @@
         var current = ++generation;
         if (request) request.abort();
         if (updateHistory) {
-            var state = {workboardPreview: true, context: source.url, scroll: source.scroll};
+            source.boardScroll = captureView().boardScroll;
+            var state = {workboardPreview: true, context: source.url, scroll: source.scroll, boardScroll: source.boardScroll};
             if (window.history.state && window.history.state.workboardPreview) window.history.replaceState(state, '', url);
             else { rememberPosition(); window.history.pushState(state, '', url); }
         }
@@ -124,7 +141,7 @@
         var url = localItem(this.href);
         if (!url) return;
         event.preventDefault();
-        if (panel.hasClass('hidden')) { source = {url: contentUrl, scroll: window.scrollY}; trigger = this; }
+        if (panel.hasClass('hidden')) { source = Object.assign({url: contentUrl}, captureView()); trigger = this; }
         open(url.href, true);
     });
     $(document).on('click', 'a[data-workspace-link]', function (event) {
@@ -158,14 +175,21 @@
         if (state && state.workboardPreview) {
             var item = localItem(window.location.href);
             if (!item) { close(); return; }
-            function preview() { source = {url: state.context, scroll: state.scroll}; open(item.href, false); }
-            if (contentUrl !== state.context) navigate(state.context, false, state.scroll, preview);
+            var context = viewStates[state.context] || state;
+            function preview() { source = {url: state.context, scroll: context.scroll, boardScroll: context.boardScroll}; open(item.href, false); }
+            if (contentUrl !== state.context) navigate(state.context, false, context.scroll, preview, context.boardScroll);
             else preview();
-        } else if (contentUrl === window.location.href) { close(); if (state) window.scrollTo(window.scrollX, state.scroll || 0); }
-        else if (workspaceUrl(window.location.href)) navigate(window.location.href, false, state ? state.scroll : 0);
+        } else if (contentUrl === window.location.href) {
+            close(); var saved = viewStates[contentUrl] || state;
+            if (saved) { restoreBoard(saved.boardScroll); window.scrollTo(window.scrollX, saved.scroll || 0); }
+        } else if (workspaceUrl(window.location.href)) {
+            var savedView = viewStates[window.location.href] || state;
+            navigate(window.location.href, false, savedView ? savedView.scroll : 0, null, savedView ? savedView.boardScroll : null);
+        }
         else window.location.reload();
     }
     window.addEventListener('popstate', function (event) {
+        viewStates[contentUrl] = captureView();
         if ($('#context-modal').hasClass('in') || $('.kanban-board.is-saving').length) { waitingForHistory = true; return; }
         restoreHistory(event.state);
     });
@@ -176,6 +200,11 @@
     $(document).on('workboard:mutation-finished', resumeHistory);
     $('#context-modal').on('show.bs.modal', cancelNavigation).on('hidden.bs.modal', resumeHistory);
     phone.addEventListener('change', syncPhone);
-    if (workspaceUrl(window.location.href)) rememberPosition();
+    window.addEventListener('pagehide', rememberPosition);
+    if (workspaceUrl(window.location.href)) {
+        var initial = window.history.state;
+        if (initial && initial.workboardWorkspace) { restoreBoard(initial.boardScroll); window.scrollTo(window.scrollX, initial.scroll || 0); }
+        rememberPosition();
+    }
     setActive(window.location.href);
 })(jQuery);

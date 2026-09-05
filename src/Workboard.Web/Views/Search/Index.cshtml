@@ -56,7 +56,7 @@
             <tbody>@foreach (var work in results.Items)
             {
                 <tr data-work-id="@work.Id"><td><a data-work-preview asp-controller="WorkItems" asp-action="Details" asp-route-projectId="@results.Project.Id" asp-route-id="@work.Id">@results.Project.Key-@work.Number</a></td>
-                    <td class="project-text">@work.Title</td><td>@work.Type</td><td>@work.Status</td><td>@work.Priority</td><td>@(work.Assignee ?? "Unassigned")</td><td>@(work.DueDate?.ToString("yyyy-MM-dd") ?? "None")</td>
+                    <td class="project-text"><a data-work-preview asp-controller="WorkItems" asp-action="Details" asp-route-projectId="@results.Project.Id" asp-route-id="@work.Id">@work.Title</a></td><td>@work.Type</td><td>@work.Status</td><td>@work.Priority</td><td>@(work.Assignee ?? "Unassigned")</td><td>@(work.DueDate?.ToString("yyyy-MM-dd") ?? "None")</td>
                     @if (!results.Archived && !results.Project.IsArchived) { <td><a asp-controller="WorkItems" asp-action="Status" asp-route-projectId="@results.Project.Id" asp-route-id="@work.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">Change status<span class="sr-only"> for @results.Project.Key-@work.Number</span></a></td> }
                 </tr>
             }</tbody>

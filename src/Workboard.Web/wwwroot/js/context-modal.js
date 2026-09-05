@@ -93,8 +93,10 @@
             $.ajax({url: localUrl(targetList.attr('data-modal-list-url')), method: 'GET'}).done(function (html, status, xhr) {
                 if (xhr.getResponseHeader('X-Workboard-Partial') !== 'list') { refreshFailed(); return; }
                 if (!targetList.length || !document.contains(targetList[0])) return;
+                var capture = targetList.data('capture-scroll');
+                var positionState = typeof capture === 'function' ? capture() : null;
                 targetList.empty().append($.parseHTML(html, document, false));
-                $(document).trigger('workboard:list-updated');
+                $(document).trigger('workboard:list-updated', [targetList, positionState]);
                 window.scrollTo(window.scrollX, position);
                 if (!trigger || !document.contains(trigger)) focusList();
             }).fail(refreshFailed);

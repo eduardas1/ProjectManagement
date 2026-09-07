@@ -1,13 +1,5 @@
-@using Workboard.Domain.Enums
 @model WorkItemLinkViewModel
-@{ ViewData["Title"] = "Remove relationship"; }
+@{ ViewData["Title"] = "Remove relationship"; ViewData["WorkProject"] = Model.Details.Project; }
 <h1>Remove relationship</h1>
-<p class="project-text">@Model.Details.Project.Key-@Model.Details.Item.Number @(Model.Kind == WorkItemLinkKind.Blocks ? "blocks" : "duplicates") @Model.TargetName</p>
-<form asp-action="RemoveLink" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" method="post">
-    <input asp-for="ProjectId" type="hidden" /><input asp-for="WorkItemId" type="hidden" /><input asp-for="ExpectedVersion" type="hidden" />
-    <input asp-for="TargetId" type="hidden" /><input asp-for="Kind" type="hidden" />
-    <div asp-validation-summary="All" class="text-danger"></div>
-    <button type="submit" class="btn btn-danger">Remove relationship</button>
-    <a asp-action="Details" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" class="btn btn-default">Cancel</a>
-    <a asp-action="Details" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId">Reload current item</a>
-</form>
+<partial name="_RemoveLink" model="Model" />
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

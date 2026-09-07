@@ -1,0 +1,20 @@
+@using Workboard.Domain.Enums
+@model WorkItemLinkViewModel
+<form data-modal-submit asp-action="AddLink" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" method="post">
+    <input asp-for="ProjectId" type="hidden" /><input asp-for="WorkItemId" type="hidden" /><input asp-for="ExpectedVersion" type="hidden" />
+    <div asp-validation-summary="ModelOnly" class="text-danger" tabindex="-1" role="alert"></div>
+    <div class="form-group"><label asp-for="Kind">Relationship</label>
+        <select asp-for="Kind" asp-items="Html.GetEnumSelectList<WorkItemLinkKind>()" class="form-control"></select>
+        <span asp-validation-for="Kind" class="text-danger"></span>
+    </div>
+    <div class="form-group"><label asp-for="TargetId">Target work item</label>
+        <select asp-for="TargetId" class="form-control"><option value="">Select an item</option>
+        @foreach (var item in Model.Options.Items.Where(item => item.Id != Model.WorkItemId))
+        { <option value="@item.Id">@Model.Details.Project.Key-@item.Number @item.Title</option> }
+        </select><span asp-validation-for="TargetId" class="text-danger"></span>
+    </div>
+    <p>This item blocks or duplicates the selected target.</p>
+    <button type="submit" class="btn btn-primary">Add relationship</button>
+    <a asp-action="Details" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" class="btn btn-default" data-modal-cancel>Cancel</a>
+    <a asp-action="AddLink" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" data-modal-reload>Reload current version</a>
+</form>

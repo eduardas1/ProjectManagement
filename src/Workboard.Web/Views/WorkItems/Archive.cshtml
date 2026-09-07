@@ -1,11 +1,5 @@
 @model WorkItemArchiveViewModel
-@{ ViewData["Title"] = Model.IsArchived ? "Archive work item" : "Restore work item"; }
+@{ ViewData["Title"] = Model.IsArchived ? "Archive work item" : "Restore work item"; ViewData["WorkProject"] = Model.Details.Project; }
 <h1>@ViewData["Title"]</h1>
-<p class="project-text">@Model.Details.Project.Key-@Model.Details.Item.Number @Model.Details.Item.Title</p>
-<form asp-action="Archive" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" method="post">
-    <input asp-for="ProjectId" type="hidden" /><input asp-for="WorkItemId" type="hidden" /><input asp-for="ExpectedVersion" type="hidden" /><input asp-for="IsArchived" type="hidden" />
-    <div asp-validation-summary="All" class="text-danger"></div>
-    <button type="submit" class="btn @(Model.IsArchived ? "btn-warning" : "btn-primary")">@(Model.IsArchived ? "Archive work item" : "Restore work item")</button>
-    <a asp-action="Details" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" class="btn btn-default">Cancel</a>
-    <a asp-action="Archive" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId">Reload current version</a>
-</form>
+<partial name="_Archive" model="Model" />
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

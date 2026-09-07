@@ -97,5 +97,5 @@ code {
 
 [data-drag-ready] .card-drag { display: inline-block; }
 
-.workspace-main .table .project-text { white-space: normal; min-width: 14em; max-width: 38em; }
-.workspace-main .table th:first-child, .workspace-main .table td:first-child { white-space: nowrap; }
+.workspace-main .table .project-text:not(.attachment-name) { white-space: normal; min-width: 14em; max-width: 38em; }
+.workspace-main .table th:first-child, .workspace-main .table td:first-child:not(.attachment-name) { white-space: nowrap; }

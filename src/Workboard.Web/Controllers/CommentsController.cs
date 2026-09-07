@@ -14,7 +14,10 @@ public class CommentsController(ISender sender) : Controller
     {
         if (!ModelState.IsValid) return BadRequest("Invalid comment list request.");
         var comments = await sender.Send(new ListCommentsQuery(projectId, workItemId, page), cancellationToken);
-        return comments == null ? NotFound() : View(comments);
+        if (comments == null) return NotFound();
+        if (!IsAjax) return View(comments);
+        Response.Headers["X-Workboard-Partial"] = "list";
+        return PartialView("_List", comments);
     }
 
     [HttpGet]
@@ -23,7 +26,7 @@ public class CommentsController(ISender sender) : Controller
         var work = await sender.Send(new GetCommentWorkQuery(projectId, workItemId), cancellationToken);
         if (work == null) return NotFound();
         if (work.Project.IsArchived || work.IsArchived) return RedirectToAction(nameof(Index), new { projectId, workItemId });
-        return View(new CreateCommentViewModel { ProjectId = projectId, WorkItemId = workItemId, Work = work });
+        return CommentForm("Create", new CreateCommentViewModel { ProjectId = projectId, WorkItemId = workItemId, Work = work });
     }
 
     [HttpPost]
@@ -40,13 +43,14 @@ public class CommentsController(ISender sender) : Controller
             if (result.Status == OperationStatus.NotFound) return NotFound();
             if (result.Status == OperationStatus.Success)
             {
+                if (IsAjax) return Json(new { saved = true, message = "Comment added." });
                 TempData["Success"] = "Comment added.";
                 return RedirectToAction(nameof(Index), new { projectId, workItemId });
             }
             ApplyError(result);
         }
         else Response.StatusCode = StatusCodes.Status400BadRequest;
-        return View(model);
+        return CommentForm("Create", model);
     }
 
     [HttpGet]
@@ -57,7 +61,7 @@ public class CommentsController(ISender sender) : Controller
         if (details == null || !details.Comment.IsAuthor) return NotFound();
         if (details.Work.Project.IsArchived || details.Work.IsArchived || details.Comment.IsDeleted)
             return RedirectToAction(nameof(Index), new { projectId, workItemId });
-        return View(new EditCommentViewModel { ProjectId = projectId, WorkItemId = workItemId, CommentId = id,
+        return CommentForm("Edit", new EditCommentViewModel { ProjectId = projectId, WorkItemId = workItemId, CommentId = id,
             ExpectedVersion = details.Comment.Version, Body = details.Comment.Body, Work = details.Work });
     }
 
@@ -75,13 +79,14 @@ public class CommentsController(ISender sender) : Controller
             if (result.Status == OperationStatus.NotFound) return NotFound();
             if (result.Status == OperationStatus.Success)
             {
+                if (IsAjax) return Json(new { saved = true, message = "Comment saved." });
                 TempData["Success"] = "Comment saved.";
                 return RedirectToAction(nameof(Index), new { projectId, workItemId });
             }
             ApplyError(result);
         }
         else Response.StatusCode = StatusCodes.Status400BadRequest;
-        return View(model);
+        return CommentForm("Edit", model);
     }
 
     [HttpGet]
@@ -92,7 +97,7 @@ public class CommentsController(ISender sender) : Controller
         if (details == null || (!details.Comment.IsAuthor && !details.Work.Project.IsOwner)) return NotFound();
         if (details.Work.Project.IsArchived || details.Work.IsArchived || details.Comment.IsDeleted)
             return RedirectToAction(nameof(Index), new { projectId, workItemId });
-        return View(new RemoveCommentViewModel { ProjectId = projectId, WorkItemId = workItemId, CommentId = id,
+        return CommentForm("Remove", new RemoveCommentViewModel { ProjectId = projectId, WorkItemId = workItemId, CommentId = id,
             ExpectedVersion = details.Comment.Version, Details = details });
     }
 
@@ -110,13 +115,23 @@ public class CommentsController(ISender sender) : Controller
             if (result.Status == OperationStatus.NotFound) return NotFound();
             if (result.Status == OperationStatus.Success)
             {
+                if (IsAjax) return Json(new { saved = true, message = "Comment removed." });
                 TempData["Success"] = "Comment removed.";
                 return RedirectToAction(nameof(Index), new { projectId, workItemId });
             }
             ApplyError(result);
         }
         else Response.StatusCode = StatusCodes.Status400BadRequest;
-        return View(model);
+        return CommentForm("Remove", model);
+    }
+
+    private bool IsAjax => Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+
+    private IActionResult CommentForm(string name, object model)
+    {
+        if (!IsAjax) return View(name, model);
+        Response.Headers["X-Workboard-Partial"] = "modal";
+        return PartialView("_" + name, model);
     }
 
     private void ApplyError(OperationResult<int> result)

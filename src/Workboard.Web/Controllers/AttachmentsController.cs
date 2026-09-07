@@ -14,7 +14,10 @@ public class AttachmentsController(ISender sender) : Controller
     {
         if (!ModelState.IsValid) return BadRequest("Invalid attachment list request.");
         var files = await sender.Send(new ListAttachmentsQuery(projectId, workItemId, documentId, page), cancellationToken);
-        return files == null ? NotFound() : View(files);
+        if (files == null) return NotFound();
+        if (!IsAjax) return View(files);
+        Response.Headers["X-Workboard-Partial"] = "list";
+        return PartialView("_List", files);
     }
 
     [HttpGet]
@@ -24,7 +27,7 @@ public class AttachmentsController(ISender sender) : Controller
         var target = await sender.Send(new GetAttachmentTargetQuery(projectId, workItemId, documentId), cancellationToken);
         if (target == null) return NotFound();
         if (target.Project.IsArchived || target.IsArchived) return RedirectToAction(nameof(Index), new { projectId, workItemId, documentId });
-        return View(new UploadAttachmentViewModel { ProjectId = projectId, WorkItemId = workItemId, DocumentId = documentId, Target = target });
+        return AttachmentForm("Upload", new UploadAttachmentViewModel { ProjectId = projectId, WorkItemId = workItemId, DocumentId = documentId, Target = target });
     }
 
     [HttpPost, RequestSizeLimit(AttachmentFile.TransportLimit), RequestFormLimits(MultipartBodyLengthLimit = AttachmentFile.TransportLimit)]
@@ -58,6 +61,7 @@ public class AttachmentsController(ISender sender) : Controller
                 if (result.Status == OperationStatus.NotFound) return NotFound();
                 if (result.Status == OperationStatus.Success)
                 {
+                    if (IsAjax) return Json(new { saved = true, message = "File uploaded." });
                     TempData["Success"] = "File uploaded.";
                     return RedirectToAction(nameof(Index), new { projectId, workItemId, documentId });
                 }
@@ -70,7 +74,7 @@ public class AttachmentsController(ISender sender) : Controller
             }
         }
         else Response.StatusCode = StatusCodes.Status400BadRequest;
-        return View(model);
+        return AttachmentForm("Upload", model);
     }
 
     [HttpGet]
@@ -89,7 +93,7 @@ public class AttachmentsController(ISender sender) : Controller
         if (details == null || !details.Attachment.CanRemove) return NotFound();
         if (details.Target.Project.IsArchived || details.Target.IsArchived)
             return RedirectToAction(nameof(Index), new { projectId, details.Target.WorkItemId, details.Target.DocumentId });
-        return View(new RemoveAttachmentViewModel { ProjectId = projectId, AttachmentId = id,
+        return AttachmentForm("Remove", new RemoveAttachmentViewModel { ProjectId = projectId, AttachmentId = id,
             ExpectedVersion = details.Attachment.Version, Details = details });
     }
 
@@ -107,13 +111,23 @@ public class AttachmentsController(ISender sender) : Controller
             if (result.Status == OperationStatus.NotFound) return NotFound();
             if (result.Status == OperationStatus.Success)
             {
+                if (IsAjax) return Json(new { saved = true, message = "File removed." });
                 TempData["Success"] = "File removed.";
                 return RedirectToAction(nameof(Index), new { projectId, details.Target.WorkItemId, details.Target.DocumentId });
             }
             ApplyError(result);
         }
         else Response.StatusCode = StatusCodes.Status400BadRequest;
-        return View(model);
+        return AttachmentForm("Remove", model);
+    }
+
+    private bool IsAjax => Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+
+    private IActionResult AttachmentForm(string name, object model)
+    {
+        if (!IsAjax) return View(name, model);
+        Response.Headers["X-Workboard-Partial"] = "modal";
+        return PartialView("_" + name, model);
     }
 
     private void ApplyError(OperationResult<int> result)

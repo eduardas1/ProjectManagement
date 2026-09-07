@@ -1,0 +1,14 @@
+@model CreateCommentViewModel
+<p class="project-text">@Model.Work.Project.Key-@Model.Work.Number @Model.Work.Title</p>
+<form data-modal-submit data-modal-dirty asp-action="Create" asp-route-projectId="@Model.ProjectId" asp-route-workItemId="@Model.WorkItemId" method="post">
+    <input asp-for="ProjectId" type="hidden" /><input asp-for="WorkItemId" type="hidden" />
+    <div asp-validation-summary="ModelOnly" class="text-danger" tabindex="-1" role="alert"></div>
+    <div class="form-group">
+        <label asp-for="Body"></label><textarea asp-for="Body" class="form-control" rows="7" maxlength="5000"></textarea>
+        <span asp-validation-for="Body" class="text-danger"></span>
+    </div>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Add comment</button>
+        <a asp-action="Index" asp-route-projectId="@Model.ProjectId" asp-route-workItemId="@Model.WorkItemId" class="btn btn-default" data-modal-cancel>Cancel</a>
+    </div>
+</form>

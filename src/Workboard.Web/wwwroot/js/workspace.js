@@ -53,6 +53,7 @@
         if (request) request.abort();
         request = null;
         panel.addClass('hidden'); body.empty(); error.addClass('hidden').text('');
+        $(document).trigger('workboard:detail-updated', [body]);
         syncPhone();
         if (trigger && document.contains(trigger)) trigger.focus({preventScroll: true});
         else { var heading = content.find('h1').first(); if (heading.length) heading.attr('tabindex', '-1')[0].focus({preventScroll: true}); }
@@ -136,6 +137,7 @@
             if (generation !== current) return;
             if (xhr.getResponseHeader('X-Workboard-Partial') !== 'preview') { fail('The work item could not be displayed. Open its full page or close this panel.'); return; }
             body.empty().append($.parseHTML(html, document, false));
+            $(document).trigger('workboard:detail-updated', [body]);
         }).fail(function (xhr, status) {
             if (status === 'abort' || generation !== current) return;
             fail(xhr.status === 401 ? 'Your session has ended. Sign in again to open this work item.' : 'This work item could not be loaded. Open its full page or close this panel.');

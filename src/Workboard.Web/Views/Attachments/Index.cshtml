@@ -1,31 +1,9 @@
 @model Workboard.Application.Attachments.TargetAttachments
-@{ ViewData["Title"] = "Attachments"; }
+@{ ViewData["Title"] = "Attachments"; ViewData["WorkProject"] = Model.Target.Project; }
 <h1>Attachments</h1>
 <p class="project-text">@Model.Target.Title</p>
-@if (Model.Target.Project.IsArchived || Model.Target.IsArchived)
-{ <div class="alert alert-info">This @(Model.Target.Project.IsArchived ? "project" : "item") is archived.</div> }
-<p><a asp-controller="@(Model.Target.WorkItemId.HasValue ? "WorkItems" : "Documents")" asp-action="Details" asp-route-projectId="@Model.Target.Project.Id" asp-route-id="@(Model.Target.WorkItemId ?? Model.Target.DocumentId)">Back to @(Model.Target.WorkItemId.HasValue ? "work item" : "document")</a>
-@if (!Model.Target.Project.IsArchived && !Model.Target.IsArchived)
-{ <a asp-action="Upload" asp-route-projectId="@Model.Target.Project.Id" asp-route-workItemId="@Model.Target.WorkItemId" asp-route-documentId="@Model.Target.DocumentId" class="btn btn-primary">Upload file</a> }
-</p>
-@if (Model.Total == 0) { <p>No attachments.</p> }
-else
-{
-    <p>@Model.Total @(Model.Total == 1 ? "file" : "files"). Page @Model.Page of @Model.PageCount.</p>
-    <div class="table-responsive"><table class="table table-striped">
-        <thead><tr><th>File</th><th>Size (bytes)</th><th>Uploaded (UTC)</th><th>Uploaded by</th><th>Actions</th></tr></thead>
-        <tbody>@foreach (var file in Model.Items)
-        {
-            <tr><td class="project-text attachment-name"><a asp-action="Download" asp-route-projectId="@Model.Target.Project.Id" asp-route-id="@file.Id">@file.DisplayName</a></td><td>@file.Length</td><td>@file.UploadedAtUtc.ToString("yyyy-MM-dd HH:mm")</td><td class="project-text">@file.UploadedBy</td><td>
-            @if (file.CanRemove && !Model.Target.Project.IsArchived && !Model.Target.IsArchived)
-            { <a asp-action="Remove" asp-route-projectId="@Model.Target.Project.Id" asp-route-id="@file.Id">Remove</a> }
-            </td></tr>
-        }</tbody>
-    </table></div>
-    <nav aria-label="Attachment pages"><ul class="pager">
-    @if (Model.Page > 1)
-    { <li><a asp-action="Index" asp-route-projectId="@Model.Target.Project.Id" asp-route-workItemId="@Model.Target.WorkItemId" asp-route-documentId="@Model.Target.DocumentId" asp-route-page="@(Model.Page - 1)">Previous</a></li> }
-    @if (Model.Page < Model.PageCount)
-    { <li><a asp-action="Index" asp-route-projectId="@Model.Target.Project.Id" asp-route-workItemId="@Model.Target.WorkItemId" asp-route-documentId="@Model.Target.DocumentId" asp-route-page="@(Model.Page + 1)">Next</a></li> }
-    </ul></nav>
-}
+<p><a asp-controller="@(Model.Target.WorkItemId.HasValue ? "WorkItems" : "Documents")" asp-action="Details" asp-route-projectId="@Model.Target.Project.Id" asp-route-id="@(Model.Target.WorkItemId ?? Model.Target.DocumentId)">Back to @(Model.Target.WorkItemId.HasValue ? "work item" : "document")</a></p>
+<section data-modal-region data-context-region aria-label="Attachments">
+<div class="alert hidden" data-modal-notice role="status"></div>
+<div data-modal-list-url="@Url.Action("Index", new { projectId = Model.Target.Project.Id, workItemId = Model.Target.WorkItemId, documentId = Model.Target.DocumentId, page = Model.Page })"><partial name="_List" model="Model" /></div>
+</section>

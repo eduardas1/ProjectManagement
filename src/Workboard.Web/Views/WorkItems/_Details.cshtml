@@ -45,9 +45,17 @@ else
         </li>
     }</ul> }
 <h2>Comments</h2>
+<section data-modal-region data-context-region aria-label="Comments">
+<div class="alert hidden" data-modal-notice role="status"></div>
+<div data-context-load data-modal-list-url="@Url.Action("Index", "Comments", new { projectId = Model.Project.Id, workItemId = Model.Item.Id })">
 <p><a asp-controller="Comments" asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-workItemId="@Model.Item.Id">View comments</a></p>
+</div></section>
 <h2>Attachments</h2>
+<section data-modal-region data-context-region aria-label="Attachments">
+<div class="alert hidden" data-modal-notice role="status"></div>
+<div data-context-load data-modal-list-url="@Url.Action("Index", "Attachments", new { projectId = Model.Project.Id, workItemId = Model.Item.Id })">
 <p><a asp-controller="Attachments" asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-workItemId="@Model.Item.Id">View attachments</a></p>
+</div></section>
 <h2>Recent changes</h2>
 <div class="table-responsive"><table class="table table-striped">
     <thead><tr><th>Time (UTC)</th><th>Account</th><th>Change</th></tr></thead>

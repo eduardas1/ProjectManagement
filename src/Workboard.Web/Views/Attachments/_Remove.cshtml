@@ -1,0 +1,18 @@
+@model RemoveAttachmentViewModel
+<p class="project-text">@Model.Details.Target.Title</p>
+<dl class="dl-horizontal">
+    <dt>File</dt><dd class="project-text">@Model.Details.Attachment.DisplayName</dd>
+    <dt>Type</dt><dd>@Model.Details.Attachment.ContentType</dd>
+    <dt>Size (bytes)</dt><dd>@Model.Details.Attachment.Length</dd>
+    <dt>Uploaded by</dt><dd class="project-text">@Model.Details.Attachment.UploadedBy</dd>
+    <dt>Uploaded (UTC)</dt><dd>@Model.Details.Attachment.UploadedAtUtc.ToString("yyyy-MM-dd HH:mm")</dd>
+</dl>
+<form data-modal-submit data-modal-dirty asp-action="Remove" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.AttachmentId" method="post">
+    <input asp-for="ProjectId" type="hidden" /><input asp-for="AttachmentId" type="hidden" /><input asp-for="ExpectedVersion" type="hidden" />
+    <div asp-validation-summary="All" class="text-danger" tabindex="-1" role="alert"></div>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-danger">Remove file</button>
+        <a asp-action="Index" asp-route-projectId="@Model.ProjectId" asp-route-workItemId="@Model.Details.Target.WorkItemId" asp-route-documentId="@Model.Details.Target.DocumentId" class="btn btn-default" data-modal-cancel>Cancel</a>
+        <a asp-action="Remove" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.AttachmentId" data-modal-reload>Reload current version</a>
+    </div>
+</form>

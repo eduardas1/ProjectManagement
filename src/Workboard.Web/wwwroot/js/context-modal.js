@@ -29,7 +29,11 @@
         return {root: root, target: target, notice: notice, kind: kind, url: url, recoveryUrl: context ? localUrl(context) : url};
     }
     function snapshot() {
-        return JSON.stringify(body.find('form').serializeArray().filter(function (field) { return field.name !== '__RequestVerificationToken'; }));
+        var fields = body.find('form').serializeArray().filter(function (field) { return field.name !== '__RequestVerificationToken'; });
+        body.find('input[type=file]').each(function () {
+            fields.push({name: this.name, files: Array.from(this.files).map(function (file) { return [file.name, file.size, file.lastModified]; })});
+        });
+        return JSON.stringify(fields);
     }
     function dirty() { return baseline !== null && body.find('form[data-modal-dirty]').length && baseline !== snapshot(); }
     function focusForm() {
@@ -46,12 +50,14 @@
         var heading = target.find('[data-modal-focus]').first();
         if (!heading.length) heading = target.find('h1').first();
         if (!heading.length) heading = root.find('[data-modal-focus],h1,h2').first();
+        if (!heading.length) heading = root.prev('h2');
         if (heading.length) heading.attr('tabindex', '-1')[0].focus({preventScroll: true});
     }
     function showError(message) { error.text(message).removeClass('hidden'); }
     function failureMessage(xhr) {
         if (xhr.status === 401) return 'Your session has ended. Sign in again before trying this change.';
         if (xhr.status === 403 || xhr.status === 404) return 'This item or project is no longer available to your account.';
+        if (xhr.status === 413) return 'The upload request is too large. Select one file no larger than 5 MiB.';
         if (xhr.status === 0) return 'The connection was interrupted. Check whether the change was saved before trying again.';
         return 'The form could not be loaded or saved. Your input has been kept. Please try again.';
     }
@@ -66,7 +72,18 @@
         group('[data-work-parent]', type === '4');
         group('[data-work-epic]', ['0', '1', '2'].indexOf(type) !== -1);
     }
-    function insertPartial(html) { body.empty().append($.parseHTML(html, document, false)); syncType(); }
+    function insertPartial(html, retainFiles) {
+        var content = $($.parseHTML(html, document, false));
+        var oldForm = body.find('form')[0], nextForm = content.filter('form').add(content.find('form'))[0];
+        if (retainFiles && oldForm && nextForm && oldForm.action === nextForm.action) {
+            $(oldForm).find('input[type=file]').each(function () {
+                var original = this;
+                if (!original.files.length) return;
+                $(nextForm).find('input[type=file]').filter(function () { return this.name === original.name; }).first().replaceWith($(original).detach());
+            });
+        }
+        body.empty().append(content); syncType();
+    }
     function captureScopes() {
         verticalPosition = window.scrollY;
         scopes.forEach(function (scope) {
@@ -148,7 +165,7 @@
         }).always(function () { if (current === generation) load = null; });
     }
     function begin(element, title, request) {
-        if (modal.hasClass('in') || pending) return;
+        if (modal.hasClass('in') || pending || $(element).closest('[data-context-region]').find('[data-modal-list-url][aria-busy=true]').length) return;
         var primary = scopeFor(element);
         if (!primary) return;
         trigger = element; scopes = [primary];
@@ -194,15 +211,20 @@
     });
     modal.on('submit', 'form[data-modal-submit]', function (event) {
         event.preventDefault(); if (pending) return;
-        var form = $(this), submitted = form.serialize();
+        var form = $(this), multipart = form.attr('enctype') === 'multipart/form-data';
+        var submitted = multipart ? new FormData(this) : form.serialize();
         captureScopes(); pending = true; modal.data('mutation-pending', true); boardBusy(true);
         error.addClass('hidden').text(''); form.find('[type=submit]').prop('disabled', true);
-        $.ajax({url: localUrl(this.action), method: 'POST', data: submitted, timeout: 20000}).done(function (data) {
+        $.ajax({url: localUrl(this.action), method: 'POST', data: submitted, processData: !multipart, contentType: multipart ? false : 'application/x-www-form-urlencoded; charset=UTF-8', timeout: multipart ? 60000 : 20000}).done(function (data) {
             if (!data || data.saved !== true) { showError('The server did not confirm this change. Check the saved list before trying again.'); refreshScopes('Check the current saved state.', true); return; }
             allowClose = true; modal.modal('hide'); allowClose = false;
             refreshScopes(data.message || 'Change saved.', false, data);
         }).fail(function (xhr) {
-            if ([400, 409, 503].indexOf(xhr.status) !== -1 && xhr.getResponseHeader('X-Workboard-Partial') === 'modal') { insertPartial(xhr.responseText); focusForm(); finish(false); }
+            if ([400, 409, 503].indexOf(xhr.status) !== -1 && xhr.getResponseHeader('X-Workboard-Partial') === 'modal') { insertPartial(xhr.responseText, multipart); focusForm(); finish(false); }
+            else if (xhr.status === 413 || (multipart && xhr.status === 400)) {
+                var oversized = multipart && form.find('input[type=file]').toArray().some(function (input) { return Array.from(input.files).some(function (file) { return file.size > 5 * 1024 * 1024; }); });
+                showError(oversized ? 'The upload request is too large. Select one file no larger than 5 MiB.' : failureMessage(xhr)); finish(false);
+            }
             else { showError(failureMessage(xhr)); refreshScopes('Check the current saved state.', true); }
         });
     });

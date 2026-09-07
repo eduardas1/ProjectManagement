@@ -1,0 +1,15 @@
+@model UploadAttachmentViewModel
+<p class="project-text">@Model.Target.Title</p>
+<form data-modal-submit data-modal-dirty asp-action="Upload" asp-route-projectId="@Model.ProjectId" asp-route-workItemId="@Model.WorkItemId" asp-route-documentId="@Model.DocumentId" method="post" enctype="multipart/form-data">
+    <input asp-for="ProjectId" type="hidden" /><input asp-for="WorkItemId" type="hidden" /><input asp-for="DocumentId" type="hidden" />
+    <div asp-validation-summary="ModelOnly" class="text-danger" tabindex="-1" role="alert"></div>
+    <div class="form-group">
+        <label asp-for="File"></label><input asp-for="File" type="file" accept=".pdf,.png,.jpg,.jpeg,.txt,.csv" aria-describedby="file-help" />
+        <p id="file-help" class="help-block">PDF, PNG, JPEG, UTF-8 text or CSV. Maximum 5 MiB. If the selection is empty after an error, select your file again.</p>
+        <span asp-validation-for="File" class="text-danger"></span>
+    </div>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Upload file</button>
+        <a asp-action="Index" asp-route-projectId="@Model.ProjectId" asp-route-workItemId="@Model.WorkItemId" asp-route-documentId="@Model.DocumentId" class="btn btn-default" data-modal-cancel>Cancel</a>
+    </div>
+</form>

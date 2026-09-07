@@ -1,48 +1,9 @@
 @model Workboard.Application.Comments.WorkComments
-@{ ViewData["Title"] = Model.Work.Project.Key + "-" + Model.Work.Number + " comments"; }
+@{ ViewData["Title"] = Model.Work.Project.Key + "-" + Model.Work.Number + " comments"; ViewData["WorkProject"] = Model.Work.Project; }
 <h1 class="project-text">Comments for @Model.Work.Project.Key-@Model.Work.Number</h1>
 <p class="project-text">@Model.Work.Title</p>
-@if (Model.Work.Project.IsArchived || Model.Work.IsArchived)
-{ <div class="alert alert-info">This @(Model.Work.Project.IsArchived ? "project" : "work item") is archived.</div> }
-<p><a asp-controller="WorkItems" asp-action="Details" asp-route-projectId="@Model.Work.Project.Id" asp-route-id="@Model.Work.Id">Back to work item</a>
-@if (!Model.Work.Project.IsArchived && !Model.Work.IsArchived)
-{ <a asp-action="Create" asp-route-projectId="@Model.Work.Project.Id" asp-route-workItemId="@Model.Work.Id" class="btn btn-primary">Add comment</a> }
-</p>
-@if (Model.Total == 0) { <p>No comments.</p> }
-else
-{
-    <p>@Model.Total @(Model.Total == 1 ? "comment" : "comments"). Page @Model.Page of @Model.PageCount. Newest first.</p>
-    @foreach (var comment in Model.Items)
-    {
-        <article class="panel panel-default" id="comment-@comment.Id">
-            <div class="panel-heading project-text">@comment.Author - @comment.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC</div>
-            <div class="panel-body">
-            @if (comment.IsDeleted)
-            {
-                <p class="project-text">Comment removed by @comment.DeletedBy on @(comment.DeletedAtUtc?.ToString("yyyy-MM-dd HH:mm")) UTC.</p>
-                @if (comment.ModerationReason != null) { <div class="project-description">Reason: @comment.ModerationReason</div> }
-            }
-            else
-            {
-                <div class="project-description">@comment.Body</div>
-                @if (comment.UpdatedAtUtc != null) { <p class="text-muted">Edited @comment.UpdatedAtUtc.Value.ToString("yyyy-MM-dd HH:mm") UTC</p> }
-                @if (!Model.Work.Project.IsArchived && !Model.Work.IsArchived)
-                {
-                    <p>
-                    @if (comment.IsAuthor)
-                    { <a asp-action="Edit" asp-route-projectId="@Model.Work.Project.Id" asp-route-workItemId="@Model.Work.Id" asp-route-id="@comment.Id">Edit</a> }
-                    @if (comment.CanRemove)
-                    { <a asp-action="Remove" asp-route-projectId="@Model.Work.Project.Id" asp-route-workItemId="@Model.Work.Id" asp-route-id="@comment.Id">Remove</a> }
-                    </p>
-                }
-            }
-            </div>
-        </article>
-    }
-    <nav aria-label="Comment pages"><ul class="pager">
-    @if (Model.Page > 1)
-    { <li><a asp-action="Index" asp-route-projectId="@Model.Work.Project.Id" asp-route-workItemId="@Model.Work.Id" asp-route-page="@(Model.Page - 1)">Previous</a></li> }
-    @if (Model.Page < Model.PageCount)
-    { <li><a asp-action="Index" asp-route-projectId="@Model.Work.Project.Id" asp-route-workItemId="@Model.Work.Id" asp-route-page="@(Model.Page + 1)">Next</a></li> }
-    </ul></nav>
-}
+<p><a asp-controller="WorkItems" asp-action="Details" asp-route-projectId="@Model.Work.Project.Id" asp-route-id="@Model.Work.Id">Back to work item</a></p>
+<section data-modal-region data-context-region aria-label="Comments">
+<div class="alert hidden" data-modal-notice role="status"></div>
+<div data-modal-list-url="@Url.Action("Index", new { projectId = Model.Work.Project.Id, workItemId = Model.Work.Id, page = Model.Page })"><partial name="_List" model="Model" /></div>
+</section>

@@ -22,10 +22,10 @@ else
         <tbody>
         @foreach (var work in Model.Items)
         {
-            <tr><td><a data-work-preview asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@work.Id">@Model.Project.Key-@work.Number</a></td>
+            <tr data-work-id="@work.Id"><td><a data-work-preview asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@work.Id">@Model.Project.Key-@work.Number</a></td>
                 <td class="project-text"><a data-work-preview asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@work.Id">@work.Title</a></td><td>@work.Type</td><td>@work.Status</td><td>@work.Priority</td><td>@(work.Assignee ?? "Unassigned")</td><td>@(work.DueDate?.ToString("yyyy-MM-dd") ?? "None")</td>
                 @if (!Model.Archived && !Model.Project.IsArchived)
-                { <td><a asp-action="Status" asp-route-projectId="@Model.Project.Id" asp-route-id="@work.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">Change status<span class="sr-only"> for @Model.Project.Key-@work.Number</span></a></td> }
+                { <td><a data-modal-form data-modal-title="Change status" asp-action="Status" asp-route-projectId="@Model.Project.Id" asp-route-id="@work.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">Change status<span class="sr-only"> for @Model.Project.Key-@work.Number</span></a></td> }
             </tr>
         }
         </tbody>

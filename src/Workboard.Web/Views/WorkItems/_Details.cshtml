@@ -4,10 +4,10 @@
 @if (Model.Project.IsArchived || Model.Item.IsArchived) { <div class="alert alert-info">This @(Model.Project.IsArchived ? "project" : "work item") is archived.</div> }
 <p><a asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-archived="@Model.Item.IsArchived">Back to work</a>
 @if (!Model.Project.IsArchived && !Model.Item.IsArchived)
-{ <a asp-action="Edit" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id" class="btn btn-default">Edit work item</a>
-  <a asp-action="Status" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)" class="btn btn-default">Change status</a> }
+{ <a data-modal-form data-modal-title="Edit work item" data-modal-size="large" asp-action="Edit" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id" class="btn btn-default">Edit work item</a>
+  <a data-modal-form data-modal-title="Change status" asp-action="Status" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)" class="btn btn-default">Change status</a> }
 @if (Model.Project.IsOwner && !Model.Project.IsArchived)
-{ <a asp-action="Archive" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id" class="btn btn-default">@(Model.Item.IsArchived ? "Restore work item" : "Archive work item")</a> }
+{ <a data-modal-form data-modal-title="Archive or restore work item" asp-action="Archive" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id" class="btn btn-default">@(Model.Item.IsArchived ? "Restore work item" : "Archive work item")</a> }
 </p>
 <dl class="dl-horizontal">
     <dt>Type</dt><dd>@Model.Item.Type</dd><dt>Status</dt><dd>@Model.Item.Status</dd><dt>Priority</dt><dd>@Model.Item.Priority</dd>
@@ -21,7 +21,7 @@
 else { <div class="project-description">@Model.Item.Description</div> }
 <h2>Hierarchy</h2>
 @if (!Model.Project.IsArchived && !Model.Item.IsArchived && Model.Item.Type != WorkItemType.Epic)
-{ <p><a asp-action="Hierarchy" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id">Change hierarchy</a></p> }
+{ <p><a data-modal-form data-modal-title="Change hierarchy" asp-action="Hierarchy" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id">Change hierarchy</a></p> }
 @if (Model.Parent != null)
 { <p class="project-text">Parent: <a data-work-preview asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Parent.Id">@Model.Project.Key-@Model.Parent.Number @Model.Parent.Title</a> @(Model.Parent.IsArchived ? "(archived)" : "")</p> }
 @if (Model.Epic != null)
@@ -33,7 +33,7 @@ else { <div class="project-description">@Model.Item.Description</div> }
 </ul> }
 <h2>Relationships</h2>
 @if (!Model.Project.IsArchived && !Model.Item.IsArchived)
-{ <p><a asp-action="AddLink" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id">Add relationship</a></p> }
+{ <p><a data-modal-form data-modal-title="Add relationship" asp-action="AddLink" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id">Add relationship</a></p> }
 @if (Model.Connections.Count == 0) { <p>No relationships.</p> }
 else
 { <ul>@foreach (var link in Model.Connections)
@@ -41,7 +41,7 @@ else
         var direction = link.Kind == WorkItemLinkKind.Blocks ? (link.IsOutgoing ? "Blocks" : "Is blocked by") : (link.IsOutgoing ? "Duplicates" : "Is duplicated by");
         <li class="project-text">@direction <a data-work-preview asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@link.TargetId">@Model.Project.Key-@link.Number @link.Title</a> @(link.IsArchived ? "(archived)" : "")
         @if (link.IsOutgoing && !Model.Project.IsArchived && !Model.Item.IsArchived && !link.IsArchived)
-        { <a asp-action="RemoveLink" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id" asp-route-targetId="@link.TargetId" asp-route-kind="@link.Kind">Remove</a> }
+        { <a data-modal-form data-modal-title="Remove relationship" asp-action="RemoveLink" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id" asp-route-targetId="@link.TargetId" asp-route-kind="@link.Kind">Remove</a> }
         </li>
     }</ul> }
 <h2>Comments</h2>

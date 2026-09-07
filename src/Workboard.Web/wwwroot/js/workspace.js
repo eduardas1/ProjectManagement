@@ -12,8 +12,12 @@
     var trigger = null, source = null;
     var contentUrl = window.location.href;
     var waitingForHistory = false;
+    var contextDialogOpen = false;
     var viewStates = Object.create(null);
 
+    function mutationPending() {
+        return contextDialogOpen || $('#context-modal').hasClass('in') || $('#context-modal').data('mutation-pending') === true || $('#work-board').data('mutation-pending') === true;
+    }
     function captureView() {
         var capture = $('#work-board').data('capture-scroll');
         return {scroll: window.scrollY, boardScroll: typeof capture === 'function' ? capture() : null};
@@ -38,8 +42,9 @@
         });
     }
     function syncPhone() {
-        var modal = phone.matches && !panel.hasClass('hidden');
-        panel.attr('aria-modal', String(modal));
+        var visible = !panel.hasClass('hidden');
+        var modal = phone.matches && visible;
+        panel.attr('aria-modal', String(modal && !contextDialogOpen)).prop('inert', visible && contextDialogOpen);
         $('.project-workspace').prop('inert', modal);
         $('body').toggleClass('preview-phone-open', modal);
     }
@@ -50,6 +55,7 @@
         panel.addClass('hidden'); body.empty(); error.addClass('hidden').text('');
         syncPhone();
         if (trigger && document.contains(trigger)) trigger.focus({preventScroll: true});
+        else { var heading = content.find('h1').first(); if (heading.length) heading.attr('tabindex', '-1')[0].focus({preventScroll: true}); }
         if (source) window.scrollTo(window.scrollX, source.scroll);
     }
     function cancelNavigation() {
@@ -88,6 +94,7 @@
             close(); source = null; trigger = null;
             content.empty().append($.parseHTML(html, document, false));
             contentUrl = target.href;
+            content.attr('data-modal-read-url', contentUrl).attr('data-modal-read-view', 'workspace');
             if (push) {
                 if (replacePreview) window.history.replaceState({workboardWorkspace: true, scroll: 0, boardScroll: viewStates[target.href] ? viewStates[target.href].boardScroll : null}, '', target.href);
                 else window.history.pushState({workboardWorkspace: true, scroll: 0, boardScroll: viewStates[target.href] ? viewStates[target.href].boardScroll : null}, '', target.href);
@@ -122,7 +129,7 @@
             if (window.history.state && window.history.state.workboardPreview) window.history.replaceState(state, '', url);
             else { rememberPosition(); window.history.pushState(state, '', url); }
         }
-        panel.removeClass('hidden'); error.addClass('hidden').text(''); body.text('Loading work item…');
+        panel.removeClass('hidden'); panel.find('[data-modal-notice]').addClass('hidden').text(''); error.addClass('hidden').text(''); body.attr('data-modal-read-url', url).attr('data-modal-read-view', 'preview').text('Loading work item…');
         panel.find('[data-preview-full]').attr('href', url);
         panel.attr('aria-busy', 'true'); syncPhone(); panel.find('[data-preview-close]').trigger('focus');
         request = $.ajax({url: url, method: 'GET', headers: {'X-Workboard-View': 'preview'}}).done(function (html, status, xhr) {
@@ -137,17 +144,18 @@
     }
     function ordinary(event) { return !event.button && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey; }
     $(document).on('click', 'a[data-work-preview]', function (event) {
-        if (!ordinary(event) || $('#context-modal').hasClass('in')) return;
+        if (!ordinary(event)) return;
         var url = localItem(this.href);
         if (!url) return;
         event.preventDefault();
+        if (mutationPending()) return;
         if (panel.hasClass('hidden')) { source = Object.assign({url: contentUrl}, captureView()); trigger = this; }
         open(url.href, true);
     });
     $(document).on('click', 'a[data-workspace-link]', function (event) {
         if (!ordinary(event) || !workspaceUrl(this.href)) return;
         event.preventDefault();
-        if ($('#context-modal').hasClass('in') || $('.kanban-board.is-saving').length) return;
+        if (mutationPending()) return;
         navigate(this.href, true, 0);
     });
     $(document).on('submit', 'form[data-workspace-get]', function (event) {
@@ -155,6 +163,7 @@
         url.search = $(this).serialize();
         if (!workspaceUrl(url.href)) return;
         event.preventDefault();
+        if (mutationPending()) return;
         navigate(url.href, true, 0);
     });
     function dismiss() {
@@ -190,18 +199,19 @@
     }
     window.addEventListener('popstate', function (event) {
         viewStates[contentUrl] = captureView();
-        if ($('#context-modal').hasClass('in') || $('.kanban-board.is-saving').length) { waitingForHistory = true; return; }
+        if (mutationPending()) { waitingForHistory = true; return; }
         restoreHistory(event.state);
     });
     function resumeHistory() {
-        if (!waitingForHistory || $('#context-modal').hasClass('in')) return;
+        if (!waitingForHistory || contextDialogOpen || $('#context-modal').hasClass('in') || $('#context-modal').data('mutation-pending') === true) return;
         waitingForHistory = false; restoreHistory(window.history.state);
     }
     $(document).on('workboard:mutation-finished', resumeHistory);
-    $('#context-modal').on('show.bs.modal', cancelNavigation).on('hidden.bs.modal', resumeHistory);
+    $('#context-modal').on('show.bs.modal', function () { contextDialogOpen = true; cancelNavigation(); syncPhone(); }).on('hidden.bs.modal', function () { contextDialogOpen = false; syncPhone(); resumeHistory(); });
     phone.addEventListener('change', syncPhone);
     window.addEventListener('pagehide', rememberPosition);
     if (workspaceUrl(window.location.href)) {
+        content.attr('data-modal-read-url', contentUrl).attr('data-modal-read-view', 'workspace');
         var initial = window.history.state;
         if (initial && initial.workboardWorkspace) { restoreBoard(initial.boardScroll); window.scrollTo(window.scrollX, initial.scroll || 0); }
         rememberPosition();

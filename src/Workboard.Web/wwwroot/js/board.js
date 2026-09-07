@@ -39,13 +39,13 @@
     function message(text, failed) {
         notice.removeClass('hidden alert-success alert-danger').addClass(failed ? 'alert-danger' : 'alert-success').text(text);
     }
-    function setBusy(value) {
+    function setBusy(value, notify) {
         busy = value;
         board.find('.kanban-board').toggleClass('is-saving', value).attr('aria-busy', String(value));
         sortables.forEach(function (sortable) { sortable.option('disabled', value); });
         board.find('[data-modal-form]').attr('aria-disabled', String(value));
         board.find('.card-drag').prop('disabled', value);
-        if (!value) $(document).trigger('workboard:mutation-finished');
+        if (!value && notify !== false) $(document).trigger('workboard:mutation-finished');
     }
     function refresh(text, failed, item) {
         var position = captureScroll();
@@ -58,20 +58,21 @@
             initialize();
             restoreScroll(position);
             window.scrollTo(window.scrollX, vertical);
+            board.data('mutation-pending', false);
             setBusy(false);
         }).fail(refreshFailed);
         function refreshFailed() {
             message(text + ' The board could not be refreshed. Reload before making another change.', true);
             $('<a>').attr('href', board.attr('data-modal-list-url')).addClass('alert-link').text(' Reload board').appendTo(notice);
-            setBusy(true);
+            board.data('requires-refresh', true); setBusy(true); board.data('mutation-pending', false);
             $(document).trigger('workboard:mutation-finished');
         }
     }
     function move(card, status) {
-        if (busy || $('#context-modal').hasClass('in')) return;
+        if (busy || $('#context-modal').hasClass('in') || $('#context-modal').data('mutation-pending') === true) return;
         var url = new URL(card.getAttribute('data-status-url'), window.location.href);
         if (url.origin !== window.location.origin) return;
-        setBusy(true);
+        board.data('mutation-pending', true); setBusy(true);
         var item = {id: card.getAttribute('data-work-id'), url: $(card).find('[data-work-preview]').first().attr('href')};
         $(card).addClass('is-pending');
         var input = {
@@ -116,11 +117,11 @@
         sortables = [];
         board = $('#work-board'); notice = $('[data-board-notice]'); busy = false;
         if (!board.length) return;
-        board.data('capture-scroll', captureScroll).data('restore-scroll', restoreScroll);
+        board.data('requires-refresh', false).data('capture-scroll', captureScroll).data('restore-scroll', restoreScroll).data('set-busy', function (value) { setBusy(value || board.data('requires-refresh') === true, false); });
         sizeBoard();
         if (window.ResizeObserver) {
             layoutObserver = new ResizeObserver(scheduleLayout);
-            $('.workspace-heading, [data-board-notice], .project-sidebar, .navbar').each(function () { layoutObserver.observe(this); });
+            $('.workspace-heading, [data-board-notice], [data-workspace-notice], .project-sidebar, .navbar').each(function () { layoutObserver.observe(this); });
         }
         if (typeof Sortable === 'undefined' || board.find('[data-board-archived]').attr('data-board-archived') === 'true') return;
         board.find('.kanban-board').attr('data-drag-ready', 'true');
@@ -134,7 +135,7 @@
                     var target = event.to.getAttribute('data-status');
                     var allowed = (event.dragged.getAttribute('data-allowed') || '').split(',');
                     board.find('.kanban-column').removeClass('is-drop-target');
-                    if (allowed.indexOf(target) === -1 || busy || $('#context-modal').hasClass('in')) return false;
+                    if (allowed.indexOf(target) === -1 || busy || $('#context-modal').hasClass('in') || $('#context-modal').data('mutation-pending') === true) return false;
                     $(event.to).closest('.kanban-column').addClass('is-drop-target');
                 },
                 onEnd: function (event) {
@@ -152,6 +153,7 @@
                 }
             }));
         });
+        if ($('#context-modal').data('mutation-pending') === true) setBusy(true, false);
     }
     $(document).on('click', '#work-board [data-modal-form]', function (event) {
         if (busy) { event.preventDefault(); event.stopImmediatePropagation(); }

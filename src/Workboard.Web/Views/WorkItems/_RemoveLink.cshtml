@@ -5,7 +5,9 @@
     <input asp-for="ProjectId" type="hidden" /><input asp-for="WorkItemId" type="hidden" /><input asp-for="ExpectedVersion" type="hidden" />
     <input asp-for="TargetId" type="hidden" /><input asp-for="Kind" type="hidden" />
     <div asp-validation-summary="All" class="text-danger" tabindex="-1" role="alert"></div>
-    <button type="submit" class="btn btn-danger">Remove relationship</button>
-    <a asp-action="Details" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" class="btn btn-default" data-modal-cancel>Cancel</a>
-    <a asp-action="Details" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" data-modal-reload>Reload current item</a>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-danger">Remove relationship</button>
+        <a asp-action="Details" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" class="btn btn-default" data-modal-cancel>Cancel</a>
+        <a asp-action="RemoveLink" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" asp-route-targetId="@Model.TargetId" asp-route-kind="@Model.Kind" data-modal-reload>Reload current item</a>
+    </div>
 </form>

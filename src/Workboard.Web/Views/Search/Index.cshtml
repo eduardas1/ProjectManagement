@@ -57,7 +57,7 @@
             {
                 <tr data-work-id="@work.Id"><td><a data-work-preview asp-controller="WorkItems" asp-action="Details" asp-route-projectId="@results.Project.Id" asp-route-id="@work.Id">@results.Project.Key-@work.Number</a></td>
                     <td class="project-text"><a data-work-preview asp-controller="WorkItems" asp-action="Details" asp-route-projectId="@results.Project.Id" asp-route-id="@work.Id">@work.Title</a></td><td>@work.Type</td><td>@work.Status</td><td>@work.Priority</td><td>@(work.Assignee ?? "Unassigned")</td><td>@(work.DueDate?.ToString("yyyy-MM-dd") ?? "None")</td>
-                    @if (!results.Archived && !results.Project.IsArchived) { <td><a asp-controller="WorkItems" asp-action="Status" asp-route-projectId="@results.Project.Id" asp-route-id="@work.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">Change status<span class="sr-only"> for @results.Project.Key-@work.Number</span></a></td> }
+                    @if (!results.Archived && !results.Project.IsArchived) { <td><a asp-controller="WorkItems" data-modal-form data-modal-title="Change status" asp-action="Status" asp-route-projectId="@results.Project.Id" asp-route-id="@work.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">Change status<span class="sr-only"> for @results.Project.Key-@work.Number</span></a></td> }
                 </tr>
             }</tbody>
         </table></div>
@@ -69,6 +69,7 @@
     </ul></nav>
 }
 
+<section data-modal-region>
 <div class="alert hidden" role="status" data-modal-notice></div>
 @if (Model.Results is { Archived: false } current && !current.Project.IsArchived)
 {
@@ -82,3 +83,5 @@
     var returnUrl = Context.Request.Path + Context.Request.QueryString;
     <div id="saved-searches" data-modal-list-url="@Url.Action("Index", "SavedSearches", new { projectId = saved.Project.Id, returnUrl })"><partial name="~/Views/SavedSearches/_List.cshtml" model="new SavedSearchListViewModel(saved, returnUrl)" /></div>
 }
+
+</section>

@@ -22,7 +22,9 @@
             </select><span asp-validation-for="EpicId" class="text-danger"></span>
         </div>
     }
-    <button type="submit" class="btn btn-primary">Save hierarchy</button>
-    <a asp-action="Details" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" class="btn btn-default" data-modal-cancel>Cancel</a>
-    <a asp-action="Hierarchy" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" data-modal-reload>Reload current version</a>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save hierarchy</button>
+        <a asp-action="Details" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" class="btn btn-default" data-modal-cancel>Cancel</a>
+        <a asp-action="Hierarchy" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" data-modal-reload>Reload current version</a>
+    </div>
 </form>

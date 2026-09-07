@@ -12,6 +12,6 @@
     <li><a data-workspace-link asp-controller="Reports" asp-action="Index" asp-route-projectId="@Model.Id" >Progress</a></li>
     <li><a asp-controller="SavedSearches" asp-action="Index" asp-route-projectId="@Model.Id" >Saved searches</a></li>
     <li><a asp-controller="Labels" asp-action="Index" asp-route-projectId="@Model.Id" >Labels</a></li>
-    @if (!Model.IsArchived) { <li><a asp-controller="WorkItems" asp-action="Create" asp-route-projectId="@Model.Id" >Create work item</a></li> }
+    @if (!Model.IsArchived) { <li><a asp-controller="WorkItems" data-modal-form data-modal-title="Create work item" data-modal-size="large" asp-action="Create" asp-route-projectId="@Model.Id" >Create work item</a></li> }
 </ul>
 </nav>

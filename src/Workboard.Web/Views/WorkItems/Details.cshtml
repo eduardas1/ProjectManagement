@@ -1,3 +1,6 @@
 @model Workboard.Application.WorkItems.WorkItemDetails
 @{ ViewData["Title"] = Model.Project.Key + "-" + Model.Item.Number; ViewData["WorkProject"] = Model.Project; }
-<partial name="_Details" model="Model" />
+<section data-modal-region>
+<div class="alert hidden" role="status" data-modal-notice></div>
+<div data-modal-read-url="@Url.Action("Details", new { projectId = Model.Project.Id, id = Model.Item.Id })" data-modal-read-view="preview"><partial name="_Details" model="Model" /></div>
+</section>

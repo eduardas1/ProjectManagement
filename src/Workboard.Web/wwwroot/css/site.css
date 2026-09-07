@@ -60,6 +60,7 @@ code {
 .work-card.sortable-ghost { opacity: .3; }
 .kanban-column.is-drop-target { border-color: #337ab7; background: #eaf2f8; }
 .kanban-board.is-saving .card-drag { cursor: wait; }
+#context-modal .form-actions { position: sticky; bottom: 0; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; padding: 12px 0; background: #fff; border-top: 1px solid #ddd; }
 #context-modal .modal-body { max-height: calc(100dvh - 150px); overflow-y: auto; }
 @media (max-width: 767px) {
     .project-workspace { display: block; }
@@ -72,6 +73,8 @@ code {
     .card-drag { min-width: 44px; min-height: 44px; }
     .work-card a { display: inline-block; padding: 4px 0; }
     #context-modal .modal-dialog { margin: 10px; }
+    #context-modal .btn, .preview-body .btn { min-height: 44px; padding-top: 11px; padding-bottom: 11px; }
+    #context-modal .form-control:not(textarea):not([multiple]) { height: 44px; }
     #context-modal .modal-body { max-height: calc(100dvh - 100px); }
 }
 @media (prefers-reduced-motion: reduce) {

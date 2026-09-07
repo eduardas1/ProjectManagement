@@ -1,9 +1,11 @@
 @model EditWorkItemViewModel
-<form data-modal-submit asp-action="Edit" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" method="post">
+<form data-modal-submit data-modal-dirty asp-action="Edit" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" method="post">
     <input asp-for="ProjectId" type="hidden" /><input asp-for="WorkItemId" type="hidden" /><input asp-for="ExpectedVersion" type="hidden" />
     <div asp-validation-summary="ModelOnly" class="text-danger" tabindex="-1" role="alert"></div>
     <partial name="_Fields" model="Model" />
-    <button type="submit" class="btn btn-primary">Save work item</button>
-    <a asp-action="Details" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" class="btn btn-default" data-modal-cancel>Cancel</a>
-    <a asp-action="Edit" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" data-modal-reload>Reload current version</a>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save work item</button>
+        <a asp-action="Details" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" class="btn btn-default" data-modal-cancel>Cancel</a>
+        <a asp-action="Edit" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" data-modal-reload>Reload current version</a>
+    </div>
 </form>

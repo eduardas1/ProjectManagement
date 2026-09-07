@@ -69,7 +69,7 @@ public class WorkItemsController(ISender sender) : Controller
             if (result.Status == OperationStatus.NotFound) return NotFound();
             if (result.Status == OperationStatus.Success)
             {
-                if (IsAjax) return Json(new { saved = true, message = "Work status saved." });
+                if (IsAjax) return WorkSaved(projectId, id, "Work status saved.");
                 TempData["Success"] = "Work status saved.";
                 return model.ReturnUrl == null ? RedirectToAction(nameof(Details), new { projectId, id }) : LocalRedirect(model.ReturnUrl);
             }

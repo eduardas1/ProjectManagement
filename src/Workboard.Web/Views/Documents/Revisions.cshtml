@@ -1,18 +1,7 @@
 @model Workboard.Application.Documents.DocumentRevisions
-@{ ViewData["Title"] = "Revision history"; }
+@{ ViewData["Title"] = "Revision history"; ViewData["WorkProject"] = Model.Project; }
 <h1>Revision history</h1>
-<p class="project-text">@Model.Document.Title</p>
-<p><a asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Document.Id">Back to document</a></p>
-<p>@Model.Total @(Model.Total == 1 ? "revision" : "revisions"). Page @Model.Page of @Model.PageCount.</p>
-<div class="table-responsive"><table class="table table-striped">
-    <thead><tr><th>Version</th><th>Title</th><th>Saved (UTC)</th><th>Editor</th></tr></thead>
-    <tbody>@foreach (var revision in Model.Items)
-    { <tr><td><a asp-action="Revision" asp-route-projectId="@Model.Project.Id" asp-route-documentId="@Model.Document.Id" asp-route-id="@revision.Id">Version @revision.Version</a></td><td class="project-text">@revision.Title</td><td>@revision.SavedAtUtc.ToString("yyyy-MM-dd HH:mm")</td><td class="project-text">@revision.Editor</td></tr> }
-    </tbody>
-</table></div>
-<nav aria-label="Revision pages"><ul class="pager">
-@if (Model.Page > 1)
-{ <li><a asp-action="Revisions" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Document.Id" asp-route-page="@(Model.Page - 1)">Previous</a></li> }
-@if (Model.Page < Model.PageCount)
-{ <li><a asp-action="Revisions" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Document.Id" asp-route-page="@(Model.Page + 1)">Next</a></li> }
-</ul></nav>
+<section data-modal-region data-context-region aria-label="Revision history">
+<div class="alert hidden" data-modal-notice role="status"></div>
+<div data-modal-list-url="@Url.Action("Revisions", new { projectId = Model.Project.Id, id = Model.Document.Id, page = Model.Page })"><partial name="_Revisions" model="Model" /></div>
+</section>

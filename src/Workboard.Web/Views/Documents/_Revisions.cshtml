@@ -1,0 +1,16 @@
+@model Workboard.Application.Documents.DocumentRevisions
+<p class="project-text">@Model.Document.Title</p>
+<p><a asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Document.Id">Back to document</a></p>
+<p>@Model.Total @(Model.Total == 1 ? "revision" : "revisions"). Page @Model.Page of @Model.PageCount.</p>
+<div class="table-responsive"><table class="table table-striped">
+    <thead><tr><th>Version</th><th>Title</th><th>Saved (UTC)</th><th>Editor</th></tr></thead>
+    <tbody>@foreach (var revision in Model.Items)
+    { <tr><td><a data-context-link asp-action="Revision" asp-route-projectId="@Model.Project.Id" asp-route-documentId="@Model.Document.Id" asp-route-id="@revision.Id">Version @revision.Version</a></td><td class="project-text">@revision.Title</td><td>@revision.SavedAtUtc.ToString("yyyy-MM-dd HH:mm")</td><td class="project-text">@revision.Editor</td></tr> }
+    </tbody>
+</table></div>
+<nav aria-label="Revision pages"><ul class="pager">
+@if (Model.Page > 1)
+{ <li><a data-context-link asp-action="Revisions" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Document.Id" asp-route-page="@(Model.Page - 1)">Previous</a></li> }
+@if (Model.Page < Model.PageCount)
+{ <li><a data-context-link asp-action="Revisions" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Document.Id" asp-route-page="@(Model.Page + 1)">Next</a></li> }
+</ul></nav>

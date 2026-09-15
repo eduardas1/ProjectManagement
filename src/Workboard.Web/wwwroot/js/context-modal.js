@@ -5,7 +5,7 @@
     var body = modal.find('[data-modal-body]');
     var error = modal.find('[data-modal-error]');
     var trigger = null, pending = false, load = null, generation = 0;
-    var scopes = [], baseline = null, allowClose = false, verticalPosition = 0;
+    var scopes = [], baseline = null, allowClose = false, verticalPosition = 0, accessLost = false;
 
     function localUrl(value) {
         var url = new URL(value, window.location.href);
@@ -26,7 +26,7 @@
         if (!notice.length) notice = root.children('[data-workspace-notice]');
         var url = localUrl(target.attr('data-modal-list-url') || target.attr('data-modal-read-url'));
         var context = root.closest('[data-work-panel]').find('[data-preview-body]').attr('data-modal-read-url') || root.closest('main').find('[data-workspace-content]').attr('data-modal-read-url');
-        return {root: root, target: target, notice: notice, kind: kind, url: url, recoveryUrl: context ? localUrl(context) : url};
+        return {root: root, target: target, notice: notice, kind: kind, url: url, accessUrl: root.attr('data-modal-access-url'), recoveryUrl: context ? localUrl(context) : url};
     }
     function snapshot() {
         var fields = body.find('form').serializeArray().filter(function (field) { return field.name !== '__RequestVerificationToken'; });
@@ -44,14 +44,17 @@
         else body.find('input:not([type=hidden]),select,textarea,button[type=submit],a').filter(':visible').first().trigger('focus');
     }
     function focusSource() {
+        var accessLink = accessLost && scopes.length ? scopes[0].notice.find('a').first() : $();
+        if (accessLink.length) { accessLink[0].focus({preventScroll: true}); return; }
         if (trigger && document.contains(trigger)) { trigger.focus({preventScroll: true}); return; }
         var root = scopes.length ? scopes[0].root : $('main');
         var target = scopes.length ? scopes[0].target : root;
         var heading = target.find('[data-modal-focus]').first();
         if (!heading.length) heading = target.find('h1').first();
         if (!heading.length) heading = root.find('[data-modal-focus],h1,h2').first();
-        if (!heading.length) heading = root.prev('h2');
+        if (!heading.length) heading = root.prevAll('h1,h2,h3').first();
         if (heading.length) heading.attr('tabindex', '-1')[0].focus({preventScroll: true});
+        else { var recovery = root.find('[data-modal-notice] a').first(); if (recovery.length) recovery[0].focus({preventScroll: true}); }
     }
     function showError(message) { error.text(message).removeClass('hidden'); }
     function failureMessage(xhr) {
@@ -99,7 +102,7 @@
     }
     function finish(lockBoard) {
         pending = false; modal.data('mutation-pending', false);
-        body.find('[type=submit]').prop('disabled', false);
+        body.find('[type=submit]').prop('disabled', accessLost);
         if (lockBoard) $('#work-board').data('requires-refresh', true);
         boardBusy(lockBoard);
         $(document).trigger('workboard:mutation-finished');
@@ -119,7 +122,7 @@
                 apply(html);
             }).fail(function (xhr) {
                 if (scope.kind === 'workspace' && xhr.status === 400 && xhr.getResponseHeader('X-Workboard-Partial') === 'workspace') apply(xhr.responseText);
-                else refreshFailed();
+                else refreshFailed(xhr);
             }).always(function () { scope.target.attr('aria-busy', 'false'); complete(); });
             function apply(html) {
                 if (!document.contains(scope.target[0])) return;
@@ -135,7 +138,13 @@
                     $('<a>').attr('href', localUrl(item.workItemUrl)).attr('data-work-preview', '').addClass('alert-link').text(' Open work item').appendTo(scope.notice);
                 }
             }
-            function refreshFailed() {
+            function refreshFailed(xhr) {
+                if (scope.accessUrl && xhr && [401, 403, 404].indexOf(xhr.status) !== -1) {
+                    accessLost = true; scope.target.empty();
+                    scope.notice.removeClass('hidden alert-info alert-success').addClass('alert-danger').text('Your access to this view has changed. ');
+                    $('<a>').attr('href', localUrl(scope.accessUrl)).addClass('alert-link').text('Open project').appendTo(scope.notice);
+                    return;
+                }
                 var legacy = scope.kind === 'list' && !scope.hasBoard;
                 var text = failed ? 'The current view could not be refreshed. Check its saved state before another change.' : legacy ? 'Your change was saved, but the list could not be refreshed. Reload this page to see it.' : 'Your change was saved, but the view could not be refreshed.';
                 scope.notice.removeClass('hidden alert-info alert-success').addClass('alert-danger').empty().append($('<span>').text(text));
@@ -151,7 +160,7 @@
         }
     }
     function loadForm(request) {
-        var current = ++generation;
+        var current = ++generation; accessLost = false;
         if (load) load.abort();
         body.text('Loading form…'); error.addClass('hidden').text(''); baseline = null;
         request.timeout = 20000;
@@ -210,7 +219,7 @@
         loadForm({url: localUrl(this.href), method: 'GET'});
     });
     modal.on('submit', 'form[data-modal-submit]', function (event) {
-        event.preventDefault(); if (pending) return;
+        event.preventDefault(); if (pending || accessLost) return;
         var form = $(this), multipart = form.attr('enctype') === 'multipart/form-data';
         var submitted = multipart ? new FormData(this) : form.serialize();
         captureScopes(); pending = true; modal.data('mutation-pending', true); boardBusy(true);
@@ -218,6 +227,7 @@
         $.ajax({url: localUrl(this.action), method: 'POST', data: submitted, processData: !multipart, contentType: multipart ? false : 'application/x-www-form-urlencoded; charset=UTF-8', timeout: multipart ? 60000 : 20000}).done(function (data) {
             if (!data || data.saved !== true) { showError('The server did not confirm this change. Check the saved list before trying again.'); refreshScopes('Check the current saved state.', true); return; }
             allowClose = true; modal.modal('hide'); allowClose = false;
+            if (data.redirectUrl) { window.location.assign(localUrl(data.redirectUrl)); return; }
             refreshScopes(data.message || 'Change saved.', false, data);
         }).fail(function (xhr) {
             if ([400, 409, 503].indexOf(xhr.status) !== -1 && xhr.getResponseHeader('X-Workboard-Partial') === 'modal') { insertPartial(xhr.responseText, multipart); focusForm(); finish(false); }

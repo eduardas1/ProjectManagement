@@ -1,0 +1,23 @@
+@model TransferOwnershipViewModel
+<p>You will remain a project member. The new owner will manage the project and its members.</p>
+<form data-modal-submit data-modal-dirty asp-action="Transfer" asp-route-id="@Model.ProjectId" method="post">
+    <input asp-for="ProjectId" type="hidden" />
+    <input asp-for="ExpectedVersion" type="hidden" />
+    <div asp-validation-summary="ModelOnly" class="text-danger" tabindex="-1" role="alert"></div>
+    <div class="form-group">
+        <label asp-for="UserId"></label>
+        <select asp-for="UserId" class="form-control">
+            <option value="">Select a member</option>
+            @foreach (var member in Model.Participants)
+            {
+                <option value="@member.UserId">@member.Email</option>
+            }
+        </select>
+        <span asp-validation-for="UserId" class="text-danger"></span>
+    </div>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-warning">Transfer ownership</button>
+        <a asp-action="Index" asp-route-id="@Model.ProjectId" class="btn btn-default" data-modal-cancel>Cancel</a>
+        <a asp-action="Transfer" asp-route-id="@Model.ProjectId" data-modal-reload>Reload current version</a>
+    </div>
+</form>

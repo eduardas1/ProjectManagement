@@ -1,11 +1,4 @@
 @model ArchiveDocumentViewModel
-@{ ViewData["Title"] = Model.IsArchived == true ? "Archive document" : "Restore document"; }
+@{ ViewData["WorkProject"] = Model.Details.Project; ViewData["Title"] = Model.IsArchived == true ? "Archive document" : "Restore document"; }
 <h1>@ViewData["Title"]</h1>
-<p class="project-text">@Model.Details.Document.Title</p>
-<form asp-action="Archive" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.DocumentId" method="post">
-    <input asp-for="ProjectId" type="hidden" /><input asp-for="DocumentId" type="hidden" /><input asp-for="ExpectedVersion" type="hidden" /><input asp-for="IsArchived" type="hidden" />
-    <div asp-validation-summary="All" class="text-danger"></div>
-    <button type="submit" class="btn btn-warning">@ViewData["Title"]</button>
-    <a asp-action="Details" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.DocumentId" class="btn btn-default">Cancel</a>
-    <a asp-action="Archive" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.DocumentId">Reload current version</a>
-</form>
+<partial name="_Archive" model="Model" />

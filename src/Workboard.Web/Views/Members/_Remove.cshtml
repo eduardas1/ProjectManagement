@@ -1,0 +1,13 @@
+@model RemoveMemberViewModel
+<p class="project-text">Revoke access for @Model.Email?</p>
+<form data-modal-submit data-modal-dirty asp-action="Remove" asp-route-id="@Model.ProjectId" method="post">
+    <input asp-for="ProjectId" type="hidden" />
+    <input asp-for="ExpectedVersion" type="hidden" />
+    <input asp-for="UserId" type="hidden" />
+    <div asp-validation-summary="All" class="text-danger" tabindex="-1" role="alert"></div>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-danger">Remove member</button>
+        <a asp-action="Index" asp-route-id="@Model.ProjectId" class="btn btn-default" data-modal-cancel>Cancel</a>
+        <a asp-action="Remove" asp-route-id="@Model.ProjectId" asp-route-userId="@Model.UserId" data-modal-reload>Reload current version</a>
+    </div>
+</form>

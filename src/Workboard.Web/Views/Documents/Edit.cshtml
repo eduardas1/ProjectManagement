@@ -1,8 +1,8 @@
 @model EditDocumentViewModel
-@{ ViewData["Title"] = "Edit document"; }
+@{ ViewData["Title"] = "Edit document"; ViewData["WorkProject"] = Model.Project; }
 <h1>Edit document</h1>
 <p class="project-text">@Model.Project.Key - @Model.Project.Name</p>
-<form asp-action="Edit" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.DocumentId" method="post">
+<form data-document-dirty data-unsaved="@((Context.Response.StatusCode >= 400).ToString().ToLowerInvariant())" asp-action="Edit" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.DocumentId" method="post">
     <input asp-for="ProjectId" type="hidden" /><input asp-for="DocumentId" type="hidden" /><input asp-for="ExpectedVersion" type="hidden" />
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <div class="form-group">

@@ -157,7 +157,7 @@
     $(document).on('click', 'a[data-workspace-link]', function (event) {
         if (!ordinary(event) || !workspaceUrl(this.href)) return;
         event.preventDefault();
-        if (mutationPending()) return;
+        if (mutationPending() || (window.workboardDirty && !window.workboardDirty.confirmLeave())) return;
         navigate(this.href, true, 0);
     });
     $(document).on('submit', 'form[data-workspace-get]', function (event) {
@@ -165,7 +165,7 @@
         url.search = $(this).serialize();
         if (!workspaceUrl(url.href)) return;
         event.preventDefault();
-        if (mutationPending()) return;
+        if (mutationPending() || (window.workboardDirty && !window.workboardDirty.confirmLeave())) return;
         navigate(url.href, true, 0);
     });
     function dismiss() {
@@ -200,6 +200,11 @@
         else window.location.reload();
     }
     window.addEventListener('popstate', function (event) {
+        var previous = new URL(contentUrl), current = new URL(window.location.href);
+        if (!workspaceUrl(contentUrl) && panel.hasClass('hidden') && !(event.state && event.state.workboardPreview)
+            && previous.origin === current.origin && previous.pathname === current.pathname && previous.search === current.search) {
+            contentUrl = window.location.href; return;
+        }
         viewStates[contentUrl] = captureView();
         if (mutationPending()) { waitingForHistory = true; return; }
         restoreHistory(event.state);
@@ -208,6 +213,10 @@
         if (!waitingForHistory || contextDialogOpen || $('#context-modal').hasClass('in') || $('#context-modal').data('mutation-pending') === true) return;
         waitingForHistory = false; restoreHistory(window.history.state);
     }
+    $(document).on('workboard:detail-updated', function (event, target) {
+        var navigation = target && target.find('template[data-project-navigation]')[0];
+        if (navigation && navigation.getAttribute('data-project-id') === $('main[data-workspace-project]').attr('data-workspace-project')) $('.project-sidebar').empty().append($(navigation.content).clone());
+    });
     $(document).on('workboard:mutation-finished', resumeHistory);
     $('#context-modal').on('show.bs.modal', function () { contextDialogOpen = true; cancelNavigation(); syncPhone(); }).on('hidden.bs.modal', function () { contextDialogOpen = false; syncPhone(); resumeHistory(); });
     phone.addEventListener('change', syncPhone);

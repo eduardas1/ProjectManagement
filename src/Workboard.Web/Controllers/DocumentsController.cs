@@ -21,7 +21,10 @@ public class DocumentsController(ISender sender) : Controller
     public async Task<IActionResult> Details([FromQuery] int projectId, [FromRoute] int id, CancellationToken cancellationToken)
     {
         var document = await sender.Send(new GetDocumentQuery(projectId, id), cancellationToken);
-        return document == null ? NotFound() : View(document);
+        if (document == null) return NotFound();
+        if (!IsAjax || Request.Headers["X-Workboard-View"] != "document") return View(document);
+        Response.Headers["X-Workboard-Partial"] = "document";
+        return PartialView("_Details", document);
     }
 
     [HttpGet]
@@ -30,7 +33,10 @@ public class DocumentsController(ISender sender) : Controller
     {
         if (!ModelState.IsValid) return BadRequest("Invalid revision list request.");
         var revisions = await sender.Send(new ListRevisionsQuery(projectId, id, page), cancellationToken);
-        return revisions == null ? NotFound() : View(revisions);
+        if (revisions == null) return NotFound();
+        if (!IsAjax) return View(revisions);
+        Response.Headers["X-Workboard-Partial"] = "list";
+        return PartialView("_Revisions", revisions);
     }
 
     [HttpGet]
@@ -38,7 +44,10 @@ public class DocumentsController(ISender sender) : Controller
         CancellationToken cancellationToken)
     {
         var revision = await sender.Send(new GetRevisionQuery(projectId, documentId, id), cancellationToken);
-        return revision == null ? NotFound() : View(revision);
+        if (revision == null) return NotFound();
+        if (!IsAjax) return View(revision);
+        Response.Headers["X-Workboard-Partial"] = "list";
+        return PartialView("_Revision", revision);
     }
 
     [HttpGet]
@@ -110,7 +119,7 @@ public class DocumentsController(ISender sender) : Controller
         var details = await sender.Send(new GetDocumentQuery(projectId, id), cancellationToken);
         if (details == null || !details.Project.IsOwner) return NotFound();
         if (details.Project.IsArchived) return RedirectToAction(nameof(Details), new { projectId, id });
-        return View(new ArchiveDocumentViewModel { ProjectId = projectId, DocumentId = id,
+        return ArchiveForm(new ArchiveDocumentViewModel { ProjectId = projectId, DocumentId = id,
             ExpectedVersion = details.Document.Version, IsArchived = !details.Document.IsArchived, Details = details });
     }
 
@@ -128,13 +137,23 @@ public class DocumentsController(ISender sender) : Controller
             if (result.Status == OperationStatus.NotFound) return NotFound();
             if (result.Status == OperationStatus.Success)
             {
+                if (IsAjax) return Json(new { saved = true, message = model.IsArchived == true ? "Document archived." : "Document restored." });
                 TempData["Success"] = model.IsArchived == true ? "Document archived." : "Document restored.";
                 return RedirectToAction(nameof(Details), new { projectId, id });
             }
             ApplyError(result);
         }
         else Response.StatusCode = StatusCodes.Status400BadRequest;
-        return View(model);
+        return ArchiveForm(model);
+    }
+
+    private bool IsAjax => Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+
+    private IActionResult ArchiveForm(ArchiveDocumentViewModel model)
+    {
+        if (!IsAjax) return View("Archive", model);
+        Response.Headers["X-Workboard-Partial"] = "modal";
+        return PartialView("_Archive", model);
     }
 
     private void ApplyError(OperationResult<int> result)

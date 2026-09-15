@@ -1,5 +1,5 @@
 @model Workboard.Application.Documents.ProjectDocuments
-@{ ViewData["Title"] = Model.Project.Key + " documents"; }
+@{ ViewData["Title"] = Model.Project.Key + " documents"; ViewData["WorkProject"] = Model.Project; }
 <h1 class="project-text">@Model.Project.Key documents</h1>
 @if (Model.Project.IsArchived) { <div class="alert alert-info">This project is archived.</div> }
 <p><a asp-controller="Projects" asp-action="Details" asp-route-id="@Model.Project.Id">Back to project</a>

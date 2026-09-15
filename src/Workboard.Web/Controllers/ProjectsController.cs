@@ -19,7 +19,10 @@ public class ProjectsController(ISender sender) : Controller
     public async Task<IActionResult> Details(int id, CancellationToken cancellationToken)
     {
         var project = await sender.Send(new GetProjectQuery(id), cancellationToken);
-        return project == null ? NotFound() : View(project);
+        if (project == null) return NotFound();
+        if (!IsAjax || Request.Headers["X-Workboard-View"] != "project") return View(project);
+        Response.Headers["X-Workboard-Partial"] = "project";
+        return PartialView("_Details", project);
     }
 
     [HttpGet]
@@ -83,7 +86,7 @@ public class ProjectsController(ISender sender) : Controller
     {
         var project = await sender.Send(new GetProjectQuery(id), cancellationToken);
         if (project == null || !project.IsOwner) return NotFound();
-        return View(new ArchiveProjectViewModel
+        return ArchiveForm(new ArchiveProjectViewModel
         {
             ProjectId = id, ExpectedVersion = project.Version, Name = project.Name,
             Key = project.Key, IsArchived = !project.IsArchived
@@ -106,13 +109,23 @@ public class ProjectsController(ISender sender) : Controller
             if (result.Status == OperationStatus.NotFound) return NotFound();
             if (result.Status == OperationStatus.Success)
             {
+                if (IsAjax) return Json(new { saved = true, redirectUrl = Url.Action(nameof(Details), new { id }) });
                 TempData["Success"] = model.IsArchived ? "Project archived." : "Project restored.";
                 return RedirectToAction(nameof(Details), new { id });
             }
             ApplyError(result);
         }
         else Response.StatusCode = StatusCodes.Status400BadRequest;
-        return View(model);
+        return ArchiveForm(model);
+    }
+
+    private bool IsAjax => Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+
+    private IActionResult ArchiveForm(ArchiveProjectViewModel model)
+    {
+        if (!IsAjax) return View("Archive", model);
+        Response.Headers["X-Workboard-Partial"] = "modal";
+        return PartialView("_Archive", model);
     }
 
     private void ApplyError(OperationResult<int> result)

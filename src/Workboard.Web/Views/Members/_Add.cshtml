@@ -1,0 +1,17 @@
+@model AddMemberViewModel
+<form data-modal-submit data-modal-dirty asp-action="Add" asp-route-id="@Model.ProjectId" method="post">
+    <input asp-for="ProjectId" type="hidden" />
+    <input asp-for="ExpectedVersion" type="hidden" />
+    <div asp-validation-summary="ModelOnly" class="text-danger" tabindex="-1" role="alert"></div>
+    <div class="form-group">
+        <label asp-for="Email"></label>
+        <input asp-for="Email" class="form-control" type="email" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+        <p class="help-block">Enter the exact email address of an existing account.</p>
+    </div>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Add member</button>
+        <a asp-action="Index" asp-route-id="@Model.ProjectId" class="btn btn-default" data-modal-cancel>Cancel</a>
+        <a asp-action="Add" asp-route-id="@Model.ProjectId" data-modal-reload>Reload current version</a>
+    </div>
+</form>

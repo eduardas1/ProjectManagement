@@ -1,0 +1,8 @@
+@model ProjectManagement.Application.Documents.DocumentRevisionDetails
+<h3 class="project-text">@Model.Revision.Title</h3>
+<p>Version @Model.Revision.Version, saved @Model.Revision.SavedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC</p>
+<p class="project-text">Editor: @Model.Revision.Editor</p>
+<p><a data-context-link asp-action="Revisions" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Document.Id">Back to revision history</a>
+<a asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Document.Id" class="btn btn-default">Current document</a></p>
+@if (Model.Body.Length == 0) { <p>No document text.</p> }
+else { <div class="project-description" data-document-snapshot-text>@Model.Body</div> }

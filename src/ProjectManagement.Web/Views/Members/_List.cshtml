@@ -1,0 +1,32 @@
+@model ProjectManagement.Application.Projects.ProjectMembers
+@if (Model.IsArchived)
+{
+    <div class="alert alert-info">This project is archived. You can revoke membership or transfer ownership.</div>
+}
+<p>
+    <a asp-controller="Projects" asp-action="Details" asp-route-id="@Model.ProjectId">Back to project</a>
+    @if (!Model.IsArchived)
+    {
+        <a data-modal-form data-modal-title="Add member" asp-action="Add" asp-route-id="@Model.ProjectId" class="btn btn-primary">Add member</a>
+    }
+    @if (Model.Participants.Any(member => !member.IsOwner))
+    {
+        <a data-modal-form data-modal-title="Transfer ownership" asp-action="Transfer" asp-route-id="@Model.ProjectId" class="btn btn-default">Transfer ownership</a>
+    }
+</p>
+<div class="table-responsive">
+<table class="table table-striped">
+    <thead><tr><th>Account</th><th>Role</th><th>Joined (UTC)</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var member in Model.Participants)
+    {
+        <tr>
+            <td class="project-text">@member.Email</td>
+            <td>@(member.IsOwner ? "Owner" : "Member")</td>
+            <td>@member.JoinedAtUtc.ToString("yyyy-MM-dd HH:mm")</td>
+            <td>@if (!member.IsOwner) { <a data-modal-form data-modal-title="Remove member" asp-action="Remove" asp-route-id="@Model.ProjectId" asp-route-userId="@member.UserId">Remove</a> }</td>
+        </tr>
+    }
+    </tbody>
+</table>
+</div>

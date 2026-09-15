@@ -1,6 +1,0 @@
-@model Workboard.Application.Documents.DocumentDetails
-@{ ViewData["Title"] = Model.Document.Title; ViewData["WorkProject"] = Model.Project; }
-<section data-modal-region>
-<div class="alert hidden" data-modal-notice role="status"></div>
-<div data-modal-read-url="@Url.Action("Details", new { projectId = Model.Project.Id, id = Model.Document.Id })" data-modal-read-view="document"><partial name="_Details" model="Model" /></div>
-</section>

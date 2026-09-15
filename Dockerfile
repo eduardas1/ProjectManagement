@@ -1,16 +1,16 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0.402-noble AS build
 WORKDIR /source
 
-COPY global.json Directory.Build.props Workboard.sln ./
-COPY src/Workboard.Domain/Workboard.Domain.csproj src/Workboard.Domain/packages.lock.json src/Workboard.Domain/
-COPY src/Workboard.Application/Workboard.Application.csproj src/Workboard.Application/packages.lock.json src/Workboard.Application/
-COPY src/Workboard.Infrastructure/Workboard.Infrastructure.csproj src/Workboard.Infrastructure/packages.lock.json src/Workboard.Infrastructure/
-COPY src/Workboard.Web/Workboard.Web.csproj src/Workboard.Web/packages.lock.json src/Workboard.Web/
-COPY tests/Workboard.Tests/Workboard.Tests.csproj tests/Workboard.Tests/packages.lock.json tests/Workboard.Tests/
-RUN dotnet restore Workboard.sln --locked-mode
+COPY global.json Directory.Build.props ProjectManagement.sln ./
+COPY src/ProjectManagement.Domain/ProjectManagement.Domain.csproj src/ProjectManagement.Domain/packages.lock.json src/ProjectManagement.Domain/
+COPY src/ProjectManagement.Application/ProjectManagement.Application.csproj src/ProjectManagement.Application/packages.lock.json src/ProjectManagement.Application/
+COPY src/ProjectManagement.Infrastructure/ProjectManagement.Infrastructure.csproj src/ProjectManagement.Infrastructure/packages.lock.json src/ProjectManagement.Infrastructure/
+COPY src/ProjectManagement.Web/ProjectManagement.Web.csproj src/ProjectManagement.Web/packages.lock.json src/ProjectManagement.Web/
+COPY tests/ProjectManagement.Tests/ProjectManagement.Tests.csproj tests/ProjectManagement.Tests/packages.lock.json tests/ProjectManagement.Tests/
+RUN dotnet restore ProjectManagement.sln --locked-mode
 
 COPY . .
-RUN dotnet publish src/Workboard.Web/Workboard.Web.csproj -c Release --no-restore -o /app/publish /p:UseAppHost=false
+RUN dotnet publish src/ProjectManagement.Web/ProjectManagement.Web.csproj -c Release --no-restore -o /app/publish /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0.13-noble
 WORKDIR /app
@@ -19,4 +19,4 @@ RUN mkdir -p /data/keys && chown -R app:app /data
 ENV Storage__Directory=/data
 USER app
 EXPOSE 8080
-ENTRYPOINT ["dotnet", "Workboard.Web.dll"]
+ENTRYPOINT ["dotnet", "ProjectManagement.Web.dll"]

@@ -1,0 +1,30 @@
+@using ProjectManagement.Domain.Enums
+@model WorkItemHierarchyViewModel
+<form data-modal-submit asp-action="Hierarchy" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" method="post">
+    <input asp-for="ProjectId" type="hidden" /><input asp-for="WorkItemId" type="hidden" /><input asp-for="ExpectedVersion" type="hidden" />
+    <div asp-validation-summary="ModelOnly" class="text-danger" tabindex="-1" role="alert"></div>
+    @if (Model.Details.Item.Type == WorkItemType.Subtask)
+    {
+        <div class="form-group"><label asp-for="ParentId">Parent</label>
+            <select asp-for="ParentId" class="form-control"><option value="">Select a parent</option>
+            @foreach (var item in Model.Options.Items.Where(item => item.Id != Model.WorkItemId && item.Type is WorkItemType.Bug or WorkItemType.Task or WorkItemType.Story))
+            { <option value="@item.Id">@Model.Details.Project.Key-@item.Number @item.Title</option> }
+            </select><span asp-validation-for="ParentId" class="text-danger"></span>
+        </div>
+        <p>The Subtask follows its parent's Epic.</p>
+    }
+    else if (Model.Details.Item.Type != WorkItemType.Epic)
+    {
+        <div class="form-group"><label asp-for="EpicId">Epic</label>
+            <select asp-for="EpicId" class="form-control"><option value="">None</option>
+            @foreach (var item in Model.Options.Items.Where(item => item.Id != Model.WorkItemId && item.Type == WorkItemType.Epic))
+            { <option value="@item.Id">@Model.Details.Project.Key-@item.Number @item.Title</option> }
+            </select><span asp-validation-for="EpicId" class="text-danger"></span>
+        </div>
+    }
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save hierarchy</button>
+        <a asp-action="Details" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" class="btn btn-default" data-modal-cancel>Cancel</a>
+        <a asp-action="Hierarchy" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" data-modal-reload>Reload current version</a>
+    </div>
+</form>

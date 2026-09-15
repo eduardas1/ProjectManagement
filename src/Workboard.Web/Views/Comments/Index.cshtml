@@ -1,9 +1,0 @@
-@model Workboard.Application.Comments.WorkComments
-@{ ViewData["Title"] = Model.Work.Project.Key + "-" + Model.Work.Number + " comments"; ViewData["WorkProject"] = Model.Work.Project; }
-<h1 class="project-text">Comments for @Model.Work.Project.Key-@Model.Work.Number</h1>
-<p class="project-text">@Model.Work.Title</p>
-<p><a asp-controller="WorkItems" asp-action="Details" asp-route-projectId="@Model.Work.Project.Id" asp-route-id="@Model.Work.Id">Back to work item</a></p>
-<section data-modal-region data-context-region aria-label="Comments">
-<div class="alert hidden" data-modal-notice role="status"></div>
-<div data-modal-list-url="@Url.Action("Index", new { projectId = Model.Work.Project.Id, workItemId = Model.Work.Id, page = Model.Page })"><partial name="_List" model="Model" /></div>
-</section>

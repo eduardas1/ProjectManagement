@@ -1,7 +1,0 @@
-@model Workboard.Application.Documents.DocumentRevisions
-@{ ViewData["Title"] = "Revision history"; ViewData["WorkProject"] = Model.Project; }
-<h1>Revision history</h1>
-<section data-modal-region data-context-region aria-label="Revision history">
-<div class="alert hidden" data-modal-notice role="status"></div>
-<div data-modal-list-url="@Url.Action("Revisions", new { projectId = Model.Project.Id, id = Model.Document.Id, page = Model.Page })"><partial name="_Revisions" model="Model" /></div>
-</section>

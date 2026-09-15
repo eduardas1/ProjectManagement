@@ -1,9 +1,0 @@
-@model Workboard.Application.Attachments.TargetAttachments
-@{ ViewData["Title"] = "Attachments"; ViewData["WorkProject"] = Model.Target.Project; }
-<h1>Attachments</h1>
-<p class="project-text">@Model.Target.Title</p>
-<p><a asp-controller="@(Model.Target.WorkItemId.HasValue ? "WorkItems" : "Documents")" asp-action="Details" asp-route-projectId="@Model.Target.Project.Id" asp-route-id="@(Model.Target.WorkItemId ?? Model.Target.DocumentId)">Back to @(Model.Target.WorkItemId.HasValue ? "work item" : "document")</a></p>
-<section data-modal-region data-context-region aria-label="Attachments">
-<div class="alert hidden" data-modal-notice role="status"></div>
-<div data-modal-list-url="@Url.Action("Index", new { projectId = Model.Target.Project.Id, workItemId = Model.Target.WorkItemId, documentId = Model.Target.DocumentId, page = Model.Page })"><partial name="_List" model="Model" /></div>
-</section>

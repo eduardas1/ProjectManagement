@@ -1,0 +1,9 @@
+@model ProjectManagement.Application.Common.PersonSummary
+@if (Model == null)
+{
+    <span class="text-muted">Unassigned</span>
+}
+else
+{
+    <span class="person-label" data-person-id="@Model.Id" title="@Model.ChoiceLabel"><span class="person-avatar" style="background-color: @Model.Color" aria-hidden="true">@Model.Initial</span><span class="person-name">@Model.DisplayName</span></span>
+}

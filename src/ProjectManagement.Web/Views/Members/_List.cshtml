@@ -21,7 +21,7 @@
     @foreach (var member in Model.Participants)
     {
         <tr>
-            <td class="project-text">@member.Email</td>
+            <td class="project-text"><partial name="_Person" model="member.Person" /><small class="member-email text-muted">@member.Email</small></td>
             <td>@(member.IsOwner ? "Owner" : "Member")</td>
             <td>@member.JoinedAtUtc.ToString("yyyy-MM-dd HH:mm")</td>
             <td>@if (!member.IsOwner) { <a data-modal-form data-modal-title="Remove member" asp-action="Remove" asp-route-id="@Model.ProjectId" asp-route-userId="@member.UserId">Remove</a> }</td>

@@ -11,9 +11,9 @@
 </p>
 <dl class="dl-horizontal">
     <dt>Version</dt><dd>@Model.Document.Version</dd>
-    <dt>Created by</dt><dd class="project-text">@Model.Document.CreatedBy</dd>
+    <dt>Created by</dt><dd class="project-text"><partial name="_Person" model="Model.Document.CreatedBy" /></dd>
     <dt>Created (UTC)</dt><dd>@Model.Document.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm")</dd>
-    <dt>Updated by</dt><dd class="project-text">@Model.Document.UpdatedBy</dd>
+    <dt>Updated by</dt><dd class="project-text"><partial name="_Person" model="Model.Document.UpdatedBy" /></dd>
     <dt>Updated (UTC)</dt><dd>@Model.Document.UpdatedAtUtc.ToString("yyyy-MM-dd HH:mm")</dd>
 </dl>
 @if (Model.Body.Length == 0) { <p>No document text.</p> }
@@ -34,6 +34,6 @@ else { <div class="project-description" data-document-text>@Model.Body</div> }
 <div class="table-responsive"><table class="table table-striped">
     <thead><tr><th>Time (UTC)</th><th>Account</th><th>Change</th></tr></thead>
     <tbody>@foreach (var change in Model.History)
-    { <tr><td>@change.OccurredAtUtc.ToString("yyyy-MM-dd HH:mm")</td><td class="project-text">@change.Actor</td><td>@change.Summary</td></tr> }
+    { <tr><td>@change.OccurredAtUtc.ToString("yyyy-MM-dd HH:mm")</td><td class="project-text"><partial name="_Person" model="change.Actor" /></td><td>@change.Summary</td></tr> }
     </tbody>
 </table></div>

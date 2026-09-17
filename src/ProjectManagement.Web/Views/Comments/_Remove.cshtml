@@ -1,6 +1,6 @@
 @model RemoveCommentViewModel
 <p class="project-text">@Model.Details.Work.Project.Key-@Model.Details.Work.Number @Model.Details.Work.Title</p>
-<p class="project-text">Author: @Model.Details.Comment.Author</p>
+<p class="project-text">Author: <partial name="_Person" model="Model.Details.Comment.Author" /></p>
 @if (Model.Details.Comment.IsDeleted) { <p>This comment has been removed.</p> }
 else { <div class="well project-description">@Model.Details.Comment.Body</div> }
 <form data-modal-submit data-modal-dirty asp-action="Remove" asp-route-projectId="@Model.ProjectId" asp-route-workItemId="@Model.WorkItemId" asp-route-id="@Model.CommentId" method="post">

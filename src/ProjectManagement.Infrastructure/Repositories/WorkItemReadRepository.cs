@@ -1,3 +1,4 @@
+using ProjectManagement.Application.Common;
 using Microsoft.EntityFrameworkCore;
 using ProjectManagement.Application.Interfaces;
 using ProjectManagement.Application.WorkItems;
@@ -9,6 +10,8 @@ namespace ProjectManagement.Infrastructure.Repositories;
 
 public class WorkItemReadRepository(ApplicationDbContext context, ICurrentUser currentUser) : IWorkItemReadRepository
 {
+    private readonly IQueryable<PersonSummary> people = PersonQueries.Select(context);
+
     private IQueryable<WorkItem> WorkQuery(int projectId)
         => context.WorkItems.AsNoTracking().Where(work => work.ProjectId == projectId
             && context.ProjectMembers.Any(member => member.ProjectId == projectId && member.UserId == currentUser.UserId));
@@ -35,7 +38,10 @@ public class WorkItemReadRepository(ApplicationDbContext context, ICurrentUser c
         page = Math.Clamp(page, 1, pages);
         var items = await query.OrderBy(work => work.Number).ThenBy(work => work.Id).Skip((page - 1) * 20).Take(20)
             .Select(work => new WorkItemSummary(work.Id, work.Number, work.Title, work.Type, work.Status, work.Priority,
-                context.Users.Where(user => user.Id == work.AssigneeId).Select(user => user.Email).SingleOrDefault(), work.DueDate, work.Version))
+                (work.AssigneeId == null ? null : new PersonSummary(work.AssigneeId,
+                people.Where(user => user.Id == work.AssigneeId).Select(user => user.FirstName).FirstOrDefault() ?? "",
+                people.Where(user => user.Id == work.AssigneeId).Select(user => user.LastName).FirstOrDefault() ?? "",
+                people.Where(user => user.Id == work.AssigneeId).Select(user => user.Email).FirstOrDefault() ?? "")), work.DueDate, work.Version))
             .ToListAsync(cancellationToken);
         return new WorkItemList(project, archived, page, pages, total, items, status);
     }
@@ -49,7 +55,10 @@ public class WorkItemReadRepository(ApplicationDbContext context, ICurrentUser c
                     || work.Status == WorkItemStatus.InReview || work.Status == WorkItemStatus.Done))
             .OrderBy(work => work.Number).ThenBy(work => work.Id)
             .Select(work => new WorkItemSummary(work.Id, work.Number, work.Title, work.Type, work.Status, work.Priority,
-                context.Users.Where(user => user.Id == work.AssigneeId).Select(user => user.Email).SingleOrDefault(), work.DueDate, work.Version))
+                (work.AssigneeId == null ? null : new PersonSummary(work.AssigneeId,
+                people.Where(user => user.Id == work.AssigneeId).Select(user => user.FirstName).FirstOrDefault() ?? "",
+                people.Where(user => user.Id == work.AssigneeId).Select(user => user.LastName).FirstOrDefault() ?? "",
+                people.Where(user => user.Id == work.AssigneeId).Select(user => user.Email).FirstOrDefault() ?? "")), work.DueDate, work.Version))
             .ToListAsync(cancellationToken);
         var columns = new[] { WorkItemStatus.Todo, WorkItemStatus.InProgress, WorkItemStatus.InReview, WorkItemStatus.Done }
             .Select(status =>
@@ -66,8 +75,8 @@ public class WorkItemReadRepository(ApplicationDbContext context, ICurrentUser c
         if (project == null) return null;
         var members = await context.ProjectMembers.AsNoTracking().Where(member => member.ProjectId == projectId
                 && context.ProjectMembers.Any(current => current.ProjectId == projectId && current.UserId == currentUser.UserId))
-            .Join(context.Users, member => member.UserId, user => user.Id, (member, user) => new { member.UserId, user.Email })
-            .OrderBy(member => member.Email).Select(member => new WorkAccount(member.UserId, member.Email!)).ToListAsync(cancellationToken);
+            .Join(people, member => member.UserId, user => user.Id, (member, user) => new { member.UserId, user.Email, user.FirstName, user.LastName })
+            .OrderBy(member => member.Email).Select(member => new WorkAccount(member.UserId, member.Email, member.FirstName, member.LastName)).ToListAsync(cancellationToken);
         var labels = await GetLabelsAsync(projectId, cancellationToken);
         var items = await WorkQuery(projectId).Where(work => !work.IsArchived).OrderBy(work => work.Number)
             .Select(work => new RelatedWork(work.Id, work.Number, work.Title, work.Type, work.IsArchived)).ToListAsync(cancellationToken);
@@ -91,8 +100,8 @@ public class WorkItemReadRepository(ApplicationDbContext context, ICurrentUser c
         if (project == null) return null;
         var work = await WorkQuery(projectId).SingleOrDefaultAsync(work => work.Id == workItemId, cancellationToken);
         if (work == null) return null;
-        var creator = await context.Users.Where(user => user.Id == work.CreatedById).Select(user => user.Email!).SingleAsync(cancellationToken);
-        var assignee = work.AssigneeId == null ? null : await context.Users.Where(user => user.Id == work.AssigneeId).Select(user => user.Email).SingleAsync(cancellationToken);
+        var creator = await people.Where(user => user.Id == work.CreatedById).SingleAsync(cancellationToken);
+        var assignee = work.AssigneeId == null ? null : await people.Where(user => user.Id == work.AssigneeId).SingleAsync(cancellationToken);
         var parent = work.ParentId == null ? null : await WorkQuery(projectId).SingleOrDefaultAsync(item => item.Id == work.ParentId, cancellationToken);
         var epicId = work.EpicId ?? parent?.EpicId;
         var epic = epicId == null ? null : await WorkQuery(projectId).Where(item => item.Id == epicId)
@@ -115,7 +124,10 @@ public class WorkItemReadRepository(ApplicationDbContext context, ICurrentUser c
         var history = await context.ChangeEvents.AsNoTracking().Where(change => change.ProjectId == projectId && change.WorkItemId == work.Id
                 && context.ProjectMembers.Any(member => member.ProjectId == projectId && member.UserId == currentUser.UserId))
             .OrderByDescending(change => change.OccurredAtUtc).ThenByDescending(change => change.Id).Take(50)
-            .Select(change => new WorkHistory(context.Users.Where(user => user.Id == change.ActorId).Select(user => user.Email!).Single(),
+            .Select(change => new WorkHistory(new PersonSummary(change.ActorId,
+                people.Where(user => user.Id == change.ActorId).Select(user => user.FirstName).Single(),
+                people.Where(user => user.Id == change.ActorId).Select(user => user.LastName).Single(),
+                people.Where(user => user.Id == change.ActorId).Select(user => user.Email).Single()),
                 change.OccurredAtUtc, change.Summary, change.DetailsJson)).ToListAsync(cancellationToken);
         return new WorkItemDetails(project, work, creator, assignee,
             parent == null ? null : new RelatedWork(parent.Id, parent.Number, parent.Title, parent.Type, parent.IsArchived),

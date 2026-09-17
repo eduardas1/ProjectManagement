@@ -7,6 +7,7 @@ namespace ProjectManagement.Infrastructure.Data;
 
 public class ApplicationDbContext : IdentityDbContext<IdentityUser>
 {
+    public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<ProjectMember> ProjectMembers => Set<ProjectMember>();
     public DbSet<ChangeEvent> ChangeEvents => Set<ChangeEvent>();
@@ -24,6 +25,7 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        builder.ApplyConfiguration(new UserProfileConfiguration());
         builder.ApplyConfiguration(new ProjectConfiguration());
         builder.ApplyConfiguration(new ProjectMemberConfiguration());
         builder.ApplyConfiguration(new ChangeEventConfiguration());

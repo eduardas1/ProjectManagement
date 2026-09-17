@@ -99,3 +99,8 @@ code {
 
 .workspace-main .table .project-text:not(.attachment-name) { white-space: normal; min-width: 14em; max-width: 38em; }
 .workspace-main .table th:first-child, .workspace-main .table td:first-child:not(.attachment-name) { white-space: nowrap; }
+
+.person-label { display: inline-flex; align-items: center; gap: 6px; vertical-align: middle; max-width: 100%; white-space: normal; text-align: left; }
+.person-avatar { display: inline-flex; flex: 0 0 22px; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; color: #fff; font-size: 12px; font-weight: 600; line-height: 1; }
+.person-name { min-width: 0; overflow-wrap: anywhere; }
+.member-email { display: block; margin-left: 28px; overflow-wrap: anywhere; white-space: normal; }

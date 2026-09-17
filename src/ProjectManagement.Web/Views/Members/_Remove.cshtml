@@ -1,5 +1,5 @@
 @model RemoveMemberViewModel
-<p class="project-text">Revoke access for @Model.Email?</p>
+<p class="project-text">Revoke access for <partial name="_Person" model="Model.Person" />?</p>
 <form data-modal-submit data-modal-dirty asp-action="Remove" asp-route-id="@Model.ProjectId" method="post">
     <input asp-for="ProjectId" type="hidden" />
     <input asp-for="ExpectedVersion" type="hidden" />

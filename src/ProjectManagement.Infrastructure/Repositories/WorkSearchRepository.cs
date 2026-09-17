@@ -13,6 +13,8 @@ namespace ProjectManagement.Infrastructure.Repositories;
 public class WorkSearchRepository(ApplicationDbContext context, ICurrentUser currentUser,
     ISearchDefinitionValidator validator, WorkItemSearchMapper mapper) : IWorkSearchRepository
 {
+    private readonly IQueryable<PersonSummary> people = PersonQueries.Select(context);
+
     private readonly WorkSearchQuery search = new(context, currentUser, validator, mapper);
 
     public async Task<WorkSearchOptions?> GetOptionsAsync(int projectId, CancellationToken cancellationToken)
@@ -21,9 +23,9 @@ public class WorkSearchRepository(ApplicationDbContext context, ICurrentUser cur
         if (project == null) return null;
         var members = await context.ProjectMembers.AsNoTracking().Where(member => member.ProjectId == projectId
                 && context.ProjectMembers.Any(current => current.ProjectId == projectId && current.UserId == currentUser.UserId))
-            .Join(context.Users, member => member.UserId, user => user.Id, (member, user) => new { Id = member.UserId, user.Email })
+            .Join(people, member => member.UserId, user => user.Id, (member, user) => new { Id = member.UserId, user.Email, user.FirstName, user.LastName })
             .OrderBy(member => member.Email).ThenBy(member => member.Id)
-            .Select(member => new WorkAccount(member.Id, member.Email!)).ToListAsync(cancellationToken);
+            .Select(member => new WorkAccount(member.Id, member.Email, member.FirstName, member.LastName)).ToListAsync(cancellationToken);
         var labels = await context.Labels.AsNoTracking().Where(label => label.ProjectId == projectId
                 && context.ProjectMembers.Any(member => member.ProjectId == projectId && member.UserId == currentUser.UserId))
             .OrderBy(label => label.NormalizedName).ThenBy(label => label.Id).Select(label => label.Name).ToListAsync(cancellationToken);
@@ -44,7 +46,10 @@ public class WorkSearchRepository(ApplicationDbContext context, ICurrentUser cur
         var ordered = ((IOrderedQueryable<WorkItem>)query.ApplyOrdering(ordering, mapper)).ThenBy(work => work.Id);
         var items = await ordered.Skip(checked((page - 1) * input.PageSize)).Take(input.PageSize)
             .Select(work => new WorkItemSummary(work.Id, work.Number, work.Title, work.Type, work.Status, work.Priority,
-                context.Users.Where(user => user.Id == work.AssigneeId).Select(user => user.Email).SingleOrDefault(), work.DueDate, work.Version))
+                (work.AssigneeId == null ? null : new PersonSummary(work.AssigneeId,
+                people.Where(user => user.Id == work.AssigneeId).Select(user => user.FirstName).FirstOrDefault() ?? "",
+                people.Where(user => user.Id == work.AssigneeId).Select(user => user.LastName).FirstOrDefault() ?? "",
+                people.Where(user => user.Id == work.AssigneeId).Select(user => user.Email).FirstOrDefault() ?? "")), work.DueDate, work.Version))
             .ToListAsync(cancellationToken);
         return OperationResult<WorkSearchPage>.Success(new WorkSearchPage(selection.Project, selection.Expression, ordering,
             input.Archived, page, input.PageSize, pages, total, items));

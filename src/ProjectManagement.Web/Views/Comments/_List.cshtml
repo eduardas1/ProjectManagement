@@ -12,11 +12,11 @@ else
     @foreach (var comment in Model.Items)
     {
         <article class="panel panel-default" id="comment-@comment.Id">
-            <div class="panel-heading project-text">@comment.Author - @comment.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC</div>
+            <div class="panel-heading project-text"><partial name="_Person" model="comment.Author" /> - @comment.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC</div>
             <div class="panel-body">
             @if (comment.IsDeleted)
             {
-                <p class="project-text">Comment removed by @comment.DeletedBy on @(comment.DeletedAtUtc?.ToString("yyyy-MM-dd HH:mm")) UTC.</p>
+                <p class="project-text">Comment removed by <partial name="_Person" model="comment.DeletedBy" /> on @(comment.DeletedAtUtc?.ToString("yyyy-MM-dd HH:mm")) UTC.</p>
                 @if (comment.ModerationReason != null) { <div class="project-description">Reason: @comment.ModerationReason</div> }
             }
             else

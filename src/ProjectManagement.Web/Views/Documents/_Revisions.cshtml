@@ -5,7 +5,7 @@
 <div class="table-responsive"><table class="table table-striped">
     <thead><tr><th>Version</th><th>Title</th><th>Saved (UTC)</th><th>Editor</th></tr></thead>
     <tbody>@foreach (var revision in Model.Items)
-    { <tr><td><a data-context-link asp-action="Revision" asp-route-projectId="@Model.Project.Id" asp-route-documentId="@Model.Document.Id" asp-route-id="@revision.Id">Version @revision.Version</a></td><td class="project-text">@revision.Title</td><td>@revision.SavedAtUtc.ToString("yyyy-MM-dd HH:mm")</td><td class="project-text">@revision.Editor</td></tr> }
+    { <tr><td><a data-context-link asp-action="Revision" asp-route-projectId="@Model.Project.Id" asp-route-documentId="@Model.Document.Id" asp-route-id="@revision.Id">Version @revision.Version</a></td><td class="project-text">@revision.Title</td><td>@revision.SavedAtUtc.ToString("yyyy-MM-dd HH:mm")</td><td class="project-text"><partial name="_Person" model="revision.Editor" /></td></tr> }
     </tbody>
 </table></div>
 <nav aria-label="Revision pages"><ul class="pager">

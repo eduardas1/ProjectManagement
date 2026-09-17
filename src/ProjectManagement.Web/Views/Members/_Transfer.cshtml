@@ -10,7 +10,7 @@
             <option value="">Select a member</option>
             @foreach (var member in Model.Participants)
             {
-                <option value="@member.UserId">@member.Email</option>
+                <option value="@member.UserId">@member.ChoiceLabel</option>
             }
         </select>
         <span asp-validation-for="UserId" class="text-danger"></span>

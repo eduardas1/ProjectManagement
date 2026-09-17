@@ -13,7 +13,7 @@
         <div class="col-sm-2 form-group"><label asp-for="Input.Priority">Priority</label><select asp-for="Input.Priority" asp-items="Html.GetEnumSelectList<WorkItemPriority>()" class="form-control"><option value="">Any priority</option></select></div>
     </div>
     <div class="row">
-        <div class="col-sm-4 form-group"><label asp-for="Input.AssigneeId">Assignee</label><select asp-for="Input.AssigneeId" class="form-control"><option value="">Any assignee</option>@foreach (var member in Model.Options.Members) { <option value="@member.Id">@member.Email</option> }</select>
+        <div class="col-sm-4 form-group"><label asp-for="Input.AssigneeId">Assignee</label><select asp-for="Input.AssigneeId" class="form-control"><option value="">Any assignee</option>@foreach (var member in Model.Options.Members) { <option value="@member.Id">@member.ChoiceLabel</option> }</select>
             <div class="checkbox"><label><input asp-for="Input.UnassignedOnly" /> Unassigned only</label></div>
         </div>
         <div class="col-sm-4 form-group"><label asp-for="Input.Label">Label</label><select asp-for="Input.Label" class="form-control"><option value="">Any label</option>@foreach (var label in Model.Options.Labels) { <option value="@label">@label</option> }</select></div>
@@ -56,7 +56,7 @@
             <tbody>@foreach (var work in results.Items)
             {
                 <tr data-work-id="@work.Id"><td><a data-work-preview asp-controller="WorkItems" asp-action="Details" asp-route-projectId="@results.Project.Id" asp-route-id="@work.Id">@results.Project.Key-@work.Number</a></td>
-                    <td class="project-text"><a data-work-preview asp-controller="WorkItems" asp-action="Details" asp-route-projectId="@results.Project.Id" asp-route-id="@work.Id">@work.Title</a></td><td>@work.Type</td><td>@work.Status</td><td>@work.Priority</td><td>@(work.Assignee ?? "Unassigned")</td><td>@(work.DueDate?.ToString("yyyy-MM-dd") ?? "None")</td>
+                    <td class="project-text"><a data-work-preview asp-controller="WorkItems" asp-action="Details" asp-route-projectId="@results.Project.Id" asp-route-id="@work.Id">@work.Title</a></td><td>@work.Type</td><td>@work.Status</td><td>@work.Priority</td><td><partial name="_Person" model="work.Assignee" /></td><td>@(work.DueDate?.ToString("yyyy-MM-dd") ?? "None")</td>
                     @if (!results.Archived && !results.Project.IsArchived) { <td><a asp-controller="WorkItems" data-modal-form data-modal-title="Change status" asp-action="Status" asp-route-projectId="@results.Project.Id" asp-route-id="@work.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">Change status<span class="sr-only"> for @results.Project.Key-@work.Number</span></a></td> }
                 </tr>
             }</tbody>

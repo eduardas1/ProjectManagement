@@ -11,8 +11,8 @@
 </p>
 <dl class="dl-horizontal">
     <dt>Type</dt><dd>@Model.Item.Type</dd><dt>Status</dt><dd>@Model.Item.Status</dd><dt>Priority</dt><dd>@Model.Item.Priority</dd>
-    <dt>Assignee</dt><dd class="project-text">@(Model.Assignee ?? "Unassigned")</dd><dt>Due date</dt><dd>@(Model.Item.DueDate?.ToString("yyyy-MM-dd") ?? "None")</dd>
-    <dt>Created by</dt><dd class="project-text">@Model.Creator</dd><dt>Created (UTC)</dt><dd>@Model.Item.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm")</dd>
+    <dt>Assignee</dt><dd class="project-text"><partial name="_Person" model="Model.Assignee" /></dd><dt>Due date</dt><dd>@(Model.Item.DueDate?.ToString("yyyy-MM-dd") ?? "None")</dd>
+    <dt>Created by</dt><dd class="project-text"><partial name="_Person" model="Model.Creator" /></dd><dt>Created (UTC)</dt><dd>@Model.Item.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm")</dd>
     <dt>Updated (UTC)</dt><dd>@Model.Item.UpdatedAtUtc.ToString("yyyy-MM-dd HH:mm")</dd>
     <dt>Labels</dt><dd>@(Model.Labels.Count == 0 ? "None" : string.Join(", ", Model.Labels.Select(label => label.Name)))</dd>
 </dl>
@@ -60,6 +60,6 @@ else
 <div class="table-responsive"><table class="table table-striped">
     <thead><tr><th>Time (UTC)</th><th>Account</th><th>Change</th></tr></thead>
     <tbody>@foreach (var change in Model.History)
-    { <tr><td>@change.OccurredAtUtc.ToString("yyyy-MM-dd HH:mm")</td><td>@change.Actor</td><td>@change.Summary</td></tr> }
+    { <tr><td>@change.OccurredAtUtc.ToString("yyyy-MM-dd HH:mm")</td><td><partial name="_Person" model="change.Actor" /></td><td>@change.Summary</td></tr> }
     </tbody>
 </table></div>

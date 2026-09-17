@@ -1,3 +1,4 @@
+using ProjectManagement.Application.Common;
 using Microsoft.EntityFrameworkCore;
 using ProjectManagement.Application.Interfaces;
 using ProjectManagement.Application.Projects;
@@ -8,6 +9,8 @@ namespace ProjectManagement.Infrastructure.Repositories;
 
 public class ProjectRepository(ApplicationDbContext context) : IProjectRepository
 {
+    private readonly IQueryable<PersonSummary> people = PersonQueries.Select(context);
+
     public async Task<IReadOnlyList<ProjectSummary>> ListAccessibleAsync(string userId, bool archived, CancellationToken cancellationToken)
     {
         return await context.Projects.AsNoTracking()
@@ -22,11 +25,17 @@ public class ProjectRepository(ApplicationDbContext context) : IProjectRepositor
         return context.Projects.AsNoTracking()
             .Where(project => project.Id == projectId && context.ProjectMembers.Any(member => member.ProjectId == project.Id && member.UserId == userId))
             .Select(project => new ProjectDetails(project.Id, project.Key, project.Name, project.Description,
-                context.Users.Where(user => user.Id == project.OwnerId).Select(user => user.Email!).Single(),
+                new PersonSummary(project.OwnerId,
+                people.Where(user => user.Id == project.OwnerId).Select(user => user.FirstName).Single(),
+                people.Where(user => user.Id == project.OwnerId).Select(user => user.LastName).Single(),
+                people.Where(user => user.Id == project.OwnerId).Select(user => user.Email).Single()),
                 project.IsArchived, project.Version, project.OwnerId == userId,
                 context.ChangeEvents.Where(change => change.ProjectId == project.Id)
                     .OrderByDescending(change => change.OccurredAtUtc).ThenByDescending(change => change.Id).Take(50)
-                    .Select(change => new ProjectHistory(context.Users.Where(user => user.Id == change.ActorId).Select(user => user.Email!).Single(),
+                    .Select(change => new ProjectHistory(new PersonSummary(change.ActorId,
+                people.Where(user => user.Id == change.ActorId).Select(user => user.FirstName).Single(),
+                people.Where(user => user.Id == change.ActorId).Select(user => user.LastName).Single(),
+                people.Where(user => user.Id == change.ActorId).Select(user => user.Email).Single()),
                         change.OccurredAtUtc, change.Summary)).ToList()))
             .SingleOrDefaultAsync(cancellationToken);
     }
@@ -40,8 +49,10 @@ public class ProjectRepository(ApplicationDbContext context) : IProjectRepositor
                 context.ProjectMembers.Where(member => member.ProjectId == project.Id)
                     .OrderBy(member => member.UserId != ownerId).ThenBy(member => member.UserId)
                     .Select(member => new ProjectParticipant(member.UserId,
-                        context.Users.Where(user => user.Id == member.UserId).Select(user => user.Email!).Single(),
-                        member.UserId == ownerId, member.JoinedAtUtc)).ToList()))
+                        people.Where(user => user.Id == member.UserId).Select(user => user.Email).Single(),
+                        member.UserId == ownerId, member.JoinedAtUtc,
+                        people.Where(user => user.Id == member.UserId).Select(user => user.FirstName).Single(),
+                        people.Where(user => user.Id == member.UserId).Select(user => user.LastName).Single())).ToList()))
             .SingleOrDefaultAsync(cancellationToken);
     }
 

@@ -222,8 +222,8 @@ public class CommentCommandTests
         Assert.Equal(2, last!.Page);
         Assert.Equal(ids.AsEnumerable().Reverse().Skip(20), last.Items.Select(item => item.Id));
         Assert.Equal("", removed!.Comment.Body);
-        Assert.Equal("member@example.test", removed.Comment.Author);
-        Assert.Equal("member@example.test", removed.Comment.DeletedBy);
+        Assert.Equal("member@example.test", removed.Comment.Author.Email);
+        Assert.Equal("member@example.test", removed.Comment.DeletedBy!.Email);
         Assert.True(removed.Comment.IsDeleted);
         Assert.True(removed.Comment.IsAuthor);
         Assert.False(removed.Comment.CanRemove);

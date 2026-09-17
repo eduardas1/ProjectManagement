@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using ProjectManagement.Application.Interfaces;
 using ProjectManagement.Application.Projects;
 using ProjectManagement.Domain.Entities;
@@ -14,24 +16,26 @@ internal class ProjectTestDatabase : IAsyncDisposable
 {
     private readonly string directory = Path.Combine(Path.GetTempPath(), "projectmanagement-tests-" + Guid.NewGuid());
 
-    public async Task InitializeAsync()
+    public async Task InitializeAsync(string? migration = null)
     {
         Directory.CreateDirectory(directory);
         await using var context = OpenContext();
-        await context.Database.MigrateAsync();
+        if (migration == null) await context.Database.MigrateAsync();
+        else await context.GetService<IMigrator>().MigrateAsync(migration);
         foreach (var id in new[] { "owner", "member", "other" })
             context.Users.Add(new IdentityUser { Id = id, UserName = id + "@example.test", Email = id + "@example.test",
                 NormalizedUserName = id.ToUpperInvariant() + "@EXAMPLE.TEST", NormalizedEmail = id.ToUpperInvariant() + "@EXAMPLE.TEST" });
         await context.SaveChangesAsync();
     }
 
-    public ApplicationDbContext OpenContext(SaveChangesInterceptor? interceptor = null)
+    public ApplicationDbContext OpenContext(SaveChangesInterceptor? interceptor = null, DbCommandInterceptor? commandInterceptor = null)
     {
         var builder = new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(new SqliteConnectionStringBuilder
         {
             DataSource = Path.Combine(directory, "tests.db"), ForeignKeys = true, Pooling = false, DefaultTimeout = 1
         }.ToString());
         if (interceptor != null) builder.AddInterceptors(interceptor);
+        if (commandInterceptor != null) builder.AddInterceptors(commandInterceptor);
         return new ApplicationDbContext(builder.Options);
     }
 

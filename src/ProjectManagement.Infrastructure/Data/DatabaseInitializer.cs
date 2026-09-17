@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ProjectManagement.Infrastructure.Identity;
+using ProjectManagement.Domain.Entities;
 
 namespace ProjectManagement.Infrastructure.Data;
 
@@ -24,6 +25,7 @@ public static class DatabaseInitializer
         var manager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
         var emails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var usersToCreate = new List<(IdentityUser User, string Password)>();
+        var profilesToCreate = new List<UserProfile>();
         foreach (var entry in entries)
         {
             var email = entry.Email?.Trim() ?? "";
@@ -42,6 +44,13 @@ public static class DatabaseInitializer
             }
 
             var user = byEmail ?? new IdentityUser { UserName = email, Email = email };
+            var firstName = entry.FirstName?.Trim() ?? "";
+            var lastName = entry.LastName?.Trim() ?? "";
+            if (firstName.Length > 100 || lastName.Length > 100
+                || string.IsNullOrEmpty(firstName) != string.IsNullOrEmpty(lastName))
+                throw new InvalidOperationException("Initial user profile is invalid.");
+            if (firstName.Length > 0 && !await context.UserProfiles.AnyAsync(profile => profile.UserId == user.Id))
+                profilesToCreate.Add(new UserProfile { UserId = user.Id, FirstName = firstName, LastName = lastName });
             foreach (var validator in manager.PasswordValidators)
             {
                 var validation = await validator.ValidateAsync(manager, user, entry.Password);
@@ -66,6 +75,8 @@ public static class DatabaseInitializer
                 throw new InvalidOperationException("Initial user creation failed.");
             }
         }
+        context.UserProfiles.AddRange(profilesToCreate);
+        await context.SaveChangesAsync();
         await transaction.CommitAsync();
     }
 }

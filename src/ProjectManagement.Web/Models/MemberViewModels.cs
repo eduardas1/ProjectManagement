@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using ProjectManagement.Application.Projects;
+using ProjectManagement.Application.Common;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace ProjectManagement.Web.Models;
 
@@ -22,6 +24,8 @@ public class RemoveMemberViewModel
     public string UserId { get; set; } = "";
     public string ProjectKey { get; set; } = "";
     public string Email { get; set; } = "";
+    [ValidateNever]
+    public PersonSummary? Person { get; set; }
 }
 
 public class TransferOwnershipViewModel

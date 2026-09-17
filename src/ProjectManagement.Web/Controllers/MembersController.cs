@@ -60,7 +60,7 @@ public class MembersController(ISender sender) : Controller
         if (member == null || member.IsOwner) return NotFound();
         return MemberForm("Remove", new RemoveMemberViewModel
         {
-            ProjectId = id, ProjectKey = project.ProjectKey, ExpectedVersion = project.Version, UserId = userId, Email = member.Email
+            ProjectId = id, ProjectKey = project.ProjectKey, ExpectedVersion = project.Version, UserId = userId, Email = member.Email, Person = member.Person
         });
     }
 
@@ -71,6 +71,7 @@ public class MembersController(ISender sender) : Controller
         var project = await sender.Send(new GetProjectMembersQuery(id), cancellationToken);
         if (project == null) return NotFound();
         model.ProjectKey = project.ProjectKey;
+        model.Person = project.Participants.SingleOrDefault(item => item.UserId == model.UserId)?.Person;
         model.Email = project.Participants.SingleOrDefault(item => item.UserId == model.UserId)?.Email ?? "";
         ModelState.Remove(nameof(model.ProjectKey));
         ModelState.Remove(nameof(model.Email));

@@ -19,7 +19,7 @@
                 </div>
                 <p class="project-text card-title"><a data-work-preview asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@work.Id">@work.Title</a></p>
                 <p class="card-meta"><span class="label label-default">@work.Type</span> <span>@work.Priority</span></p>
-                <p class="project-text text-muted">@(work.Assignee ?? "Unassigned")</p>
+                <p class="project-text text-muted"><partial name="_Person" model="work.Assignee" /></p>
                 @if (work.DueDate.HasValue) { <p>Due @work.DueDate.Value.ToString("yyyy-MM-dd")</p> }
                 @if (!Model.Project.IsArchived)
                 { <a data-modal-form data-modal-title="Change status" asp-action="Status" asp-route-projectId="@Model.Project.Id" asp-route-id="@work.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">Change status<span class="sr-only"> for @Model.Project.Key-@work.Number</span></a> }

@@ -1,3 +1,4 @@
+using ProjectManagement.Application.Common;
 using Microsoft.EntityFrameworkCore;
 using ProjectManagement.Application.Attachments;
 using ProjectManagement.Application.Comments;
@@ -12,6 +13,8 @@ namespace ProjectManagement.Infrastructure.Repositories;
 
 public class CollaborationReadRepository(ApplicationDbContext context, ICurrentUser currentUser) : ICollaborationReadRepository
 {
+    private readonly IQueryable<PersonSummary> people = PersonQueries.Select(context);
+
     public Task<CommentWork?> GetCommentWorkAsync(int projectId, int workItemId, CancellationToken cancellationToken)
         => context.WorkItems.AsNoTracking().Where(work => work.ProjectId == projectId && work.Id == workItemId
                 && context.ProjectMembers.Any(member => member.ProjectId == projectId && member.UserId == currentUser.UserId))
@@ -26,9 +29,15 @@ public class CollaborationReadRepository(ApplicationDbContext context, ICurrentU
 
     private IQueryable<CommentItem> ProjectComments(IQueryable<Comment> query)
         => query.Select(comment => new CommentItem(comment.Id, comment.IsDeleted ? "" : comment.Body, comment.Version,
-            context.Users.Where(user => user.Id == comment.AuthorId).Select(user => user.Email ?? user.UserName ?? "Account").Single(),
+            new PersonSummary(comment.AuthorId,
+                people.Where(user => user.Id == comment.AuthorId).Select(user => user.FirstName).Single(),
+                people.Where(user => user.Id == comment.AuthorId).Select(user => user.LastName).Single(),
+                people.Where(user => user.Id == comment.AuthorId).Select(user => user.Email).Single()),
             comment.CreatedAtUtc, comment.UpdatedAtUtc, comment.IsDeleted,
-            context.Users.Where(user => user.Id == comment.DeletedById).Select(user => user.Email ?? user.UserName ?? "Account").SingleOrDefault(),
+            (comment.DeletedById == null ? null : new PersonSummary(comment.DeletedById,
+                people.Where(user => user.Id == comment.DeletedById).Select(user => user.FirstName).FirstOrDefault() ?? "",
+                people.Where(user => user.Id == comment.DeletedById).Select(user => user.LastName).FirstOrDefault() ?? "",
+                people.Where(user => user.Id == comment.DeletedById).Select(user => user.Email).FirstOrDefault() ?? "")),
             comment.DeletedAtUtc, comment.ModerationReason, comment.AuthorId == currentUser.UserId,
             !comment.IsDeleted && (comment.AuthorId == currentUser.UserId
                 || context.Projects.Any(project => project.Id == comment.ProjectId && project.OwnerId == currentUser.UserId))));
@@ -67,8 +76,14 @@ public class CollaborationReadRepository(ApplicationDbContext context, ICurrentU
 
     private IQueryable<DocumentInfo> SelectDocumentInfo(IQueryable<ProjectDocument> query)
         => query.Select(document => new DocumentInfo(document.Id, document.Title, document.Version, document.IsArchived,
-            context.Users.Where(user => user.Id == document.CreatedById).Select(user => user.Email ?? user.UserName ?? "Account").Single(),
-            context.Users.Where(user => user.Id == document.UpdatedById).Select(user => user.Email ?? user.UserName ?? "Account").Single(),
+            new PersonSummary(document.CreatedById,
+                people.Where(user => user.Id == document.CreatedById).Select(user => user.FirstName).Single(),
+                people.Where(user => user.Id == document.CreatedById).Select(user => user.LastName).Single(),
+                people.Where(user => user.Id == document.CreatedById).Select(user => user.Email).Single()),
+            new PersonSummary(document.UpdatedById,
+                people.Where(user => user.Id == document.UpdatedById).Select(user => user.FirstName).Single(),
+                people.Where(user => user.Id == document.UpdatedById).Select(user => user.LastName).Single(),
+                people.Where(user => user.Id == document.UpdatedById).Select(user => user.Email).Single()),
             document.CreatedAtUtc, document.UpdatedAtUtc));
 
     private IQueryable<DocumentRevision> RevisionQuery(int projectId, int documentId)
@@ -78,7 +93,10 @@ public class CollaborationReadRepository(ApplicationDbContext context, ICurrentU
 
     private IQueryable<RevisionInfo> SelectRevisionInfo(IQueryable<DocumentRevision> query)
         => query.Select(revision => new RevisionInfo(revision.Id, revision.Version, revision.Title,
-            context.Users.Where(user => user.Id == revision.EditorId).Select(user => user.Email ?? user.UserName ?? "Account").Single(),
+            new PersonSummary(revision.EditorId,
+                people.Where(user => user.Id == revision.EditorId).Select(user => user.FirstName).Single(),
+                people.Where(user => user.Id == revision.EditorId).Select(user => user.LastName).Single(),
+                people.Where(user => user.Id == revision.EditorId).Select(user => user.Email).Single()),
             revision.SavedAtUtc));
 
     public async Task<ProjectDocuments?> ListDocumentsAsync(int projectId, bool archived, int page, CancellationToken cancellationToken)
@@ -107,7 +125,10 @@ public class CollaborationReadRepository(ApplicationDbContext context, ICurrentU
                 && context.ProjectMembers.Any(member => member.ProjectId == projectId && member.UserId == currentUser.UserId))
             .OrderByDescending(change => change.OccurredAtUtc).ThenByDescending(change => change.Id).Take(50)
             .Select(change => new ProjectHistory(
-                context.Users.Where(user => user.Id == change.ActorId).Select(user => user.Email ?? user.UserName ?? "Account").Single(),
+                new PersonSummary(change.ActorId,
+                people.Where(user => user.Id == change.ActorId).Select(user => user.FirstName).Single(),
+                people.Where(user => user.Id == change.ActorId).Select(user => user.LastName).Single(),
+                people.Where(user => user.Id == change.ActorId).Select(user => user.Email).Single()),
                 change.OccurredAtUtc, change.Summary)).ToListAsync(cancellationToken);
         return new DocumentDetails(project, info, body, history);
     }
@@ -168,7 +189,10 @@ public class CollaborationReadRepository(ApplicationDbContext context, ICurrentU
     private IQueryable<AttachmentInfo> SelectAttachmentInfo(IQueryable<Attachment> query)
         => query.Select(attachment => new AttachmentInfo(attachment.Id, attachment.Version, attachment.DisplayName,
             attachment.ContentType, attachment.Length,
-            context.Users.Where(user => user.Id == attachment.UploadedById).Select(user => user.Email ?? user.UserName ?? "Account").Single(),
+            new PersonSummary(attachment.UploadedById,
+                people.Where(user => user.Id == attachment.UploadedById).Select(user => user.FirstName).Single(),
+                people.Where(user => user.Id == attachment.UploadedById).Select(user => user.LastName).Single(),
+                people.Where(user => user.Id == attachment.UploadedById).Select(user => user.Email).Single()),
             attachment.UploadedAtUtc, attachment.UploadedById == currentUser.UserId
                 || context.Projects.Any(project => project.Id == attachment.ProjectId && project.OwnerId == currentUser.UserId)));
 

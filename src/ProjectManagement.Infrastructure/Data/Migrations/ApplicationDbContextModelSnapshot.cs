@@ -684,6 +684,31 @@ namespace ProjectManagement.Infrastructure.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ProjectManagement.Domain.Entities.UserProfile", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("UserProfiles", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Profile_FirstName", "length(trim(FirstName)) BETWEEN 1 AND 100");
+
+                            t.HasCheckConstraint("CK_Profile_LastName", "length(trim(LastName)) BETWEEN 1 AND 100");
+                        });
+                });
+
             modelBuilder.Entity("ProjectManagement.Domain.Entities.WorkItem", b =>
                 {
                     b.Property<int>("Id")
@@ -1055,6 +1080,15 @@ namespace ProjectManagement.Infrastructure.Data.Migrations
                         .WithMany()
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ProjectManagement.Domain.Entities.UserProfile", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                        .WithOne()
+                        .HasForeignKey("ProjectManagement.Domain.Entities.UserProfile", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 

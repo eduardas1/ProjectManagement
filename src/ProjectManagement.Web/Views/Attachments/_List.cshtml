@@ -13,7 +13,7 @@ else
         <thead><tr><th>File</th><th>Size (bytes)</th><th>Uploaded (UTC)</th><th>Uploaded by</th><th>Actions</th></tr></thead>
         <tbody>@foreach (var file in Model.Items)
         {
-            <tr><td class="project-text attachment-name"><a asp-action="Download" asp-route-projectId="@Model.Target.Project.Id" asp-route-id="@file.Id">@file.DisplayName</a></td><td>@file.Length</td><td>@file.UploadedAtUtc.ToString("yyyy-MM-dd HH:mm")</td><td class="project-text">@file.UploadedBy</td><td>
+            <tr><td class="project-text attachment-name"><a asp-action="Download" asp-route-projectId="@Model.Target.Project.Id" asp-route-id="@file.Id">@file.DisplayName</a></td><td>@file.Length</td><td>@file.UploadedAtUtc.ToString("yyyy-MM-dd HH:mm")</td><td class="project-text"><partial name="_Person" model="file.UploadedBy" /></td><td>
             @if (file.CanRemove && !Model.Target.Project.IsArchived && !Model.Target.IsArchived)
             { <a data-modal-form data-modal-title="Remove file" asp-action="Remove" asp-route-projectId="@Model.Target.Project.Id" asp-route-id="@file.Id">Remove</a> }
             </td></tr>

@@ -62,6 +62,7 @@ code {
 .kanban-board.is-saving .card-drag { cursor: wait; }
 #context-modal .form-actions { position: sticky; bottom: 0; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; padding: 12px 0; background: #fff; border-top: 1px solid #ddd; }
 #context-modal .modal-body { max-height: calc(100dvh - 150px); overflow-y: auto; }
+.modal-header .close { width: 44px; height: 44px; padding: 10px; margin: -10px -10px -10px 0; }
 @media (max-width: 767px) {
     .project-workspace { display: block; }
     .project-sidebar { width: auto; padding: 10px 15px; border-right: 0; border-bottom: 1px solid #ddd; }

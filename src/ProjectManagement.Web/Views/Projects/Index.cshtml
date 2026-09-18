@@ -5,7 +5,7 @@
 }
 
 <h1>@ViewData["Title"]</h1>
-<p>
+<p class="action-links">
     <a asp-action="Create" class="btn btn-primary">Create project</a>
     <a asp-action="Index" asp-route-archived="@(!archived)">@(archived ? "Active projects" : "Archived projects")</a>
 </p>

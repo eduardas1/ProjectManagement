@@ -2,7 +2,7 @@
 <h1 class="project-text">@Model.Document.Title</h1>
 @if (Model.Project.IsArchived || Model.Document.IsArchived)
 { <div class="alert alert-info">This @(Model.Project.IsArchived ? "project" : "document") is archived.</div> }
-<p><a asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-archived="@Model.Document.IsArchived">Back to documents</a>
+<p class="action-links"><a asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-archived="@Model.Document.IsArchived">Back to documents</a>
 <a href="#document-revisions" class="btn btn-default">Revision history</a>
 @if (!Model.Project.IsArchived && !Model.Document.IsArchived)
 { <a asp-action="Edit" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Document.Id" class="btn btn-default">Edit document</a> }

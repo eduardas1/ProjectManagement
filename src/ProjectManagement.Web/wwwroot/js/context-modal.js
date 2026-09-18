@@ -209,14 +209,24 @@
     modal.on('change', '[name=Type]', syncType);
     modal.on('hide.bs.modal', function (event) {
         if (pending && !allowClose) { event.preventDefault(); return; }
-        if (!allowClose && dirty() && !window.confirm('Discard unsaved changes?')) { event.preventDefault(); return; }
+        if (window.projectConfirmation.active) { event.preventDefault(); return; }
+        if (!allowClose && dirty()) {
+            event.preventDefault();
+            window.projectConfirmation.ask('Discard unsaved changes?', modal).then(function (discard) {
+                if (!discard || pending) return;
+                allowClose = true; modal.modal('hide'); allowClose = false;
+            });
+            return;
+        }
         generation++; if (load) load.abort(); load = null;
     });
     modal.on('hidden.bs.modal', function () { body.empty(); error.addClass('hidden').text(''); baseline = null; window.requestAnimationFrame(focusSource); });
     modal.on('click', '[data-modal-cancel]', function (event) { event.preventDefault(); modal.modal('hide'); });
     modal.on('click', '[data-modal-reload]', function (event) {
-        event.preventDefault(); if (pending || (dirty() && !window.confirm('Discard unsaved changes?'))) return;
-        loadForm({url: localUrl(this.href), method: 'GET'});
+        event.preventDefault(); if (pending || window.projectConfirmation.active) return;
+        var url = localUrl(this.href);
+        var answer = dirty() ? window.projectConfirmation.ask('Discard unsaved changes?', modal) : Promise.resolve(true);
+        answer.then(function (discard) { if (discard && !pending) loadForm({url: url, method: 'GET'}); });
     });
     modal.on('submit', 'form[data-modal-submit]', function (event) {
         event.preventDefault(); if (pending || accessLost) return;

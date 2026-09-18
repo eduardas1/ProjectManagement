@@ -3,7 +3,7 @@
 @{ ViewData["Title"] = Model.Project.Key + " work"; ViewData["WorkProject"] = Model.Project; }
 <h1 class="project-text">@Model.Project.Key work</h1>
 @if (Model.Project.IsArchived) { <div class="alert alert-info">This project is archived.</div> }
-<p><a data-workspace-link asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-status="@Model.Status" asp-route-archived="@(!Model.Archived)" class="btn btn-default">@(Model.Archived ? "Active work" : "Archived work")</a></p>
+<p class="action-links"><a data-workspace-link asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-status="@Model.Status" asp-route-archived="@(!Model.Archived)" class="btn btn-default">@(Model.Archived ? "Active work" : "Archived work")</a></p>
 <form data-workspace-get asp-action="Index" method="get" class="form-inline">
     <input name="projectId" value="@Model.Project.Id" type="hidden" /><input name="archived" value="@Model.Archived.ToString().ToLowerInvariant()" type="hidden" />
     <div class="form-group"><label for="status">Status</label>

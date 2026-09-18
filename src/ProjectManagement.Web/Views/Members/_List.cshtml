@@ -3,7 +3,7 @@
 {
     <div class="alert alert-info">This project is archived. You can revoke membership or transfer ownership.</div>
 }
-<p>
+<p class="action-links">
     <a asp-controller="Projects" asp-action="Details" asp-route-id="@Model.ProjectId">Back to project</a>
     @if (!Model.IsArchived)
     {

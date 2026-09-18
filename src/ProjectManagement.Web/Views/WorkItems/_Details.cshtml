@@ -2,7 +2,7 @@
 @model ProjectManagement.Application.WorkItems.WorkItemDetails
 <h1 class="project-text">@Model.Project.Key-@Model.Item.Number @Model.Item.Title</h1>
 @if (Model.Project.IsArchived || Model.Item.IsArchived) { <div class="alert alert-info">This @(Model.Project.IsArchived ? "project" : "work item") is archived.</div> }
-<p><a asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-archived="@Model.Item.IsArchived">Back to work</a>
+<p class="action-links"><a asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-archived="@Model.Item.IsArchived">Back to work</a>
 @if (!Model.Project.IsArchived && !Model.Item.IsArchived)
 { <a data-modal-form data-modal-title="Edit work item" data-modal-size="large" asp-action="Edit" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id" class="btn btn-default">Edit work item</a>
   <a data-modal-form data-modal-title="Change status" asp-action="Status" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)" class="btn btn-default">Change status</a> }

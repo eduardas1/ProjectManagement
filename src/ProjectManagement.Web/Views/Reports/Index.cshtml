@@ -5,7 +5,7 @@
 @if (Model.Project.IsArchived) { <div class="alert alert-info">This project is archived. Its progress remains available.</div> }
 <div asp-validation-summary="All" class="text-danger" role="alert"></div>
 <p>Filter: <code class="report-expression">@(string.IsNullOrEmpty(Model.Progress?.Expression ?? Model.Input.Expression) ? "All work" : Model.Progress?.Expression ?? Model.Input.Expression)</code></p>
-<p><a data-workspace-link asp-controller="Search" asp-action="Index" asp-all-route-data="Model.SearchRoutes()" class="btn btn-default">Back to search</a>
+<p class="action-links"><a data-workspace-link asp-controller="Search" asp-action="Index" asp-all-route-data="Model.SearchRoutes()" class="btn btn-default">Back to search</a>
     <a data-workspace-link asp-action="Index" asp-route-projectId="@Model.Project.Id" class="btn btn-default">Clear filter</a></p>
 @if (Model.Progress is { } progress)
 {

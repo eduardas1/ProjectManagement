@@ -16,7 +16,7 @@
     var viewStates = Object.create(null);
 
     function mutationPending() {
-        return contextDialogOpen || $('#context-modal').hasClass('in') || $('#context-modal').data('mutation-pending') === true || $('#work-board').data('mutation-pending') === true;
+        return window.projectConfirmation.active || contextDialogOpen || $('#context-modal').hasClass('in') || $('#context-modal').data('mutation-pending') === true || $('#work-board').data('mutation-pending') === true;
     }
     function captureView() {
         var capture = $('#work-board').data('capture-scroll');
@@ -157,16 +157,19 @@
     $(document).on('click', 'a[data-workspace-link]', function (event) {
         if (!ordinary(event) || !workspaceUrl(this.href)) return;
         event.preventDefault();
-        if (mutationPending() || (window.workboardDirty && !window.workboardDirty.confirmLeave())) return;
-        navigate(this.href, true, 0);
+        if (mutationPending()) return;
+        var url = this.href;
+        var answer = window.workboardDirty ? window.workboardDirty.confirmLeave() : Promise.resolve(true);
+        answer.then(function (leave) { if (leave && !mutationPending()) navigate(url, true, 0); });
     });
     $(document).on('submit', 'form[data-workspace-get]', function (event) {
         var url = new URL(this.action, window.location.href);
         url.search = $(this).serialize();
         if (!workspaceUrl(url.href)) return;
         event.preventDefault();
-        if (mutationPending() || (window.workboardDirty && !window.workboardDirty.confirmLeave())) return;
-        navigate(url.href, true, 0);
+        if (mutationPending()) return;
+        var answer = window.workboardDirty ? window.workboardDirty.confirmLeave() : Promise.resolve(true);
+        answer.then(function (leave) { if (leave && !mutationPending()) navigate(url.href, true, 0); });
     });
     function dismiss() {
         if (window.history.state && window.history.state.workboardPreview) window.history.back();

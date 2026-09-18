@@ -5,6 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Project Management System</title>
+    <script src="~/js/theme.js" asp-append-version="true"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap-theme.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -13,6 +14,7 @@
     <nav class="navbar navbar-default">
         <div class="container-fluid">
             <div class="navbar-header">
+                <button type="button" class="btn btn-default theme-toggle theme-phone visible-xs-inline-block" data-theme-toggle data-compact hidden aria-label="Switch to dark mode">Dark</button>
                 <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navigation" aria-expanded="false" aria-controls="navigation">
                     <span class="sr-only">Toggle navigation</span>
                     <span class="icon-bar"></span>
@@ -23,7 +25,6 @@
             </div>
             <div class="collapse navbar-collapse" id="navigation">
                 <ul class="nav navbar-nav">
-                    <li><a asp-controller="Home" asp-action="Index">Home</a></li>
                     @if (User.Identity?.IsAuthenticated == true)
                     {
                         <li><a asp-controller="Projects" asp-action="Index">Projects</a></li>
@@ -32,6 +33,7 @@
                 @if (User.Identity?.IsAuthenticated == true)
                 {
                     <div class="navbar-right">
+                        <button type="button" class="btn btn-default navbar-btn theme-toggle hidden-xs" data-theme-toggle hidden aria-label="Switch to dark mode">Dark mode</button>
                         <p class="navbar-text">@await Component.InvokeAsync("CurrentPerson")</p>
                         <form asp-controller="Account" asp-action="Logout" method="post" class="navbar-form">
                             <button type="submit" class="btn btn-default">Sign out</button>
@@ -41,6 +43,7 @@
                 else
                 {
                     <ul class="nav navbar-nav navbar-right">
+                        <li><button type="button" class="btn btn-default navbar-btn theme-toggle hidden-xs" data-theme-toggle hidden aria-label="Switch to dark mode">Dark mode</button></li>
                         <li><a asp-controller="Account" asp-action="Login">Sign in</a></li>
                     </ul>
                 }
@@ -65,8 +68,10 @@
     </main>
     </div>
     @if (project != null) { <partial name="_WorkPreview" /><partial name="_ContextModal" /> }
+    <partial name="_ConfirmDialog" />
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.js"></script>
+    <script src="~/js/confirmation.js" asp-append-version="true"></script>
     @if (project != null)
     {
         <script src="~/lib/sortable/Sortable.min.js"></script>

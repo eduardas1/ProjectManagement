@@ -44,7 +44,7 @@
     <h2>Results</h2>
     @if (!results.Archived)
     {
-        <p><a data-workspace-link asp-controller="Reports" asp-action="Index" asp-route-projectId="@results.Project.Id" asp-route-Input.Expression="@results.Expression" asp-route-Input.Ordering="@results.Ordering" asp-route-Input.Page="@results.Page" asp-route-Input.PageSize="@results.PageSize" class="btn btn-default">Progress for these results</a></p>
+        <p class="action-links"><a data-workspace-link asp-controller="Reports" asp-action="Index" asp-route-projectId="@results.Project.Id" asp-route-Input.Expression="@results.Expression" asp-route-Input.Ordering="@results.Ordering" asp-route-Input.Page="@results.Page" asp-route-Input.PageSize="@results.PageSize" class="btn btn-default">Progress for these results</a></p>
     }
     <p>Expression: <code class="search-expression">@(results.Expression.Length == 0 ? "All work" : results.Expression)</code></p>
     <p>Order: <code>@results.Ordering</code>. @(results.Archived ? "Archived work" : "Active work").</p>

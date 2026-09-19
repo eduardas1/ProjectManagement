@@ -172,6 +172,7 @@
         answer.then(function (leave) { if (leave && !mutationPending()) navigate(url.href, true, 0); });
     });
     function dismiss() {
+        if (mutationPending()) return;
         if (window.history.state && window.history.state.workboardPreview) window.history.back();
         else close();
     }

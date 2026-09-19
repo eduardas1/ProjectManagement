@@ -2,6 +2,9 @@
 @model CreateWorkItemViewModel
 <form data-modal-submit data-modal-dirty asp-action="Create" asp-route-projectId="@Model.ProjectId" method="post">
     <input asp-for="ProjectId" type="hidden" />
+    <input asp-for="DesiredStatus" type="hidden" />
+    @if (Model.DesiredStatus != WorkItemStatus.Backlog)
+    { <p>After creating this item, move it to <strong>@Model.DesiredStatus</strong>.</p> }
     <div asp-validation-summary="ModelOnly" class="text-danger" tabindex="-1" role="alert"></div>
     <div class="form-group">
         <label asp-for="Type"></label><select asp-for="Type" asp-items="Html.GetEnumSelectList<WorkItemType>()" class="form-control"></select>

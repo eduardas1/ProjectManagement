@@ -25,6 +25,8 @@ public class WorkItemForm
 
 public class CreateWorkItemViewModel : WorkItemForm
 {
+    [EnumDataType(typeof(WorkItemStatus))]
+    public WorkItemStatus DesiredStatus { get; set; } = WorkItemStatus.Backlog;
     [EnumDataType(typeof(WorkItemType))]
     public WorkItemType Type { get; set; } = WorkItemType.Task;
     public int? ParentId { get; set; }

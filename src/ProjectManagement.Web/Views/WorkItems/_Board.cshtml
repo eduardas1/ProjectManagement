@@ -7,10 +7,12 @@
 {
     <section class="kanban-column" data-column="@((int)column.Status)">
         <h2 tabindex="-1" data-modal-focus>@column.Status <small>(@column.Total)</small></h2>
+        @if (!Model.Project.IsArchived)
+        { <p><a class="btn btn-default btn-sm" data-modal-form data-modal-title="Create work item" data-modal-size="large" asp-action="Create" asp-route-projectId="@Model.Project.Id" asp-route-desiredStatus="@column.Status">Create in @column.Status</a></p> }
         <div class="kanban-items" data-status="@((int)column.Status)" aria-label="@column.Status work items">
         @foreach (var work in column.Items)
         {
-            <article class="panel panel-default work-card" id="work-@work.Id" data-work-id="@work.Id" data-version="@work.Version"
+            <article class="panel panel-default work-card work-kind-@work.Type.ToString().ToLowerInvariant()" id="work-@work.Id" data-work-id="@work.Id" data-version="@work.Version"
                 data-allowed="@string.Join(",", WorkItemWorkflow.AllowedStatuses(work.Status).Select(status => (int)status))"
                 data-status-url="@Url.Action("Status", new { projectId = Model.Project.Id, id = work.Id })">
             <div class="panel-body">
@@ -18,7 +20,7 @@
                 @if (!Model.Project.IsArchived) { <button type="button" class="btn btn-default btn-xs card-drag" aria-label="Drag @Model.Project.Key-@work.Number to another status" title="Drag to another status" tabindex="-1"><span aria-hidden="true" class="glyphicon glyphicon-move"></span></button> }
                 </div>
                 <p class="project-text card-title"><a data-work-preview asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@work.Id">@work.Title</a></p>
-                <p class="card-meta"><span class="label label-default">@work.Type</span> <span>@work.Priority</span></p>
+                <p class="card-meta"><partial name="_WorkType" model="work.Type" /> <span>@work.Priority</span></p>
                 <p class="project-text text-muted"><partial name="_Person" model="work.Assignee" /></p>
                 @if (work.DueDate.HasValue) { <p>Due @work.DueDate.Value.ToString("yyyy-MM-dd")</p> }
                 @if (!Model.Project.IsArchived)

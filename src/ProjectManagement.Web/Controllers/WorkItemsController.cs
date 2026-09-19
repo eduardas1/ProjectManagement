@@ -90,12 +90,13 @@ public class WorkItemsController(ISender sender) : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Create([FromQuery] int projectId, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromQuery] int projectId, CancellationToken cancellationToken, WorkItemStatus desiredStatus = WorkItemStatus.Backlog)
     {
+        if (!ModelState.IsValid || !Enum.IsDefined(desiredStatus)) return BadRequest("Select a valid target status.");
         var options = await sender.Send(new GetWorkItemOptionsQuery(projectId), cancellationToken);
         if (options == null) return NotFound();
         if (options.Project.IsArchived) return RedirectToAction(nameof(Index), new { projectId });
-        return WorkForm("Create", new CreateWorkItemViewModel { ProjectId = projectId, Options = options });
+        return WorkForm("Create", new CreateWorkItemViewModel { ProjectId = projectId, Options = options, DesiredStatus = desiredStatus });
     }
 
     [HttpPost]
@@ -107,14 +108,15 @@ public class WorkItemsController(ISender sender) : Controller
         model.Options = options;
         if (ModelState.IsValid)
         {
-            var result = await sender.Send(new CreateWorkItemCommand(projectId, model.Type, model.Title, model.Description ?? "",
-                model.Priority, model.AssigneeId, model.DueDate, model.ParentId, model.EpicId, model.LabelIds ?? []), cancellationToken);
+            var result = await sender.Send(new CreateBoardWorkItemCommand(new CreateWorkItemCommand(projectId, model.Type, model.Title, model.Description ?? "",
+                model.Priority, model.AssigneeId, model.DueDate, model.ParentId, model.EpicId, model.LabelIds ?? []), model.DesiredStatus), cancellationToken);
             if (result.Status == OperationStatus.NotFound) return NotFound();
             if (result.Status == OperationStatus.Success)
             {
-                return WorkSaved(projectId, result.Value, "Work item created.");
+                return WorkSaved(projectId, result.Value!.Id, result.Value.TargetReached ? "Work item created."
+                    : $"Work item created, but it could not be moved to {result.Value.Target}. Open it to check its current status.");
             }
-            ApplyError(result);
+            ApplyError(new OperationResult<int>(result.Status, 0, result.Field, result.Error));
         }
         else Response.StatusCode = StatusCodes.Status400BadRequest;
         return WorkForm("Create", model);

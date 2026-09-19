@@ -174,7 +174,7 @@
         }).always(function () { if (current === generation) load = null; });
     }
     function begin(element, title, request) {
-        if (modal.hasClass('in') || pending || $(element).closest('[data-context-region]').find('[data-modal-list-url][aria-busy=true]').length) return;
+        if (modal.hasClass('in') || pending || modal.data('mutation-pending') === true || $(element).closest('[data-context-region]').find('[data-modal-list-url][aria-busy=true]').length) return;
         var primary = scopeFor(element);
         if (!primary) return;
         trigger = element; scopes = [primary];

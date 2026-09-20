@@ -66,6 +66,32 @@ public class BoardCreateTests
         Assert.Single(await session.Context.ChangeEvents.Where(change => change.Action == "WorkCreated").ToListAsync());
     }
 
+    [Fact]
+    public async Task AChildAddedDuringCreationPreventsCompletionWithoutLosingTheParent()
+    {
+        // Arrange
+        await using var database = new ProjectTestDatabase();
+        await database.InitializeAsync();
+        await using var session = database.Open();
+        var project = (await session.Create.Handle(new("CHILD", "Children", ""), default)).Value;
+        var services = Services(session);
+        services.AddTransient<IPipelineBehavior<ChangeWorkItemStatusCommand, OperationResult<int>>, UnfinishedChild>();
+        using var provider = services.BuildServiceProvider();
+        var create = new CreateWorkItemCommand(project, WorkItemType.Task, "Parent work", "",
+            WorkItemPriority.Medium, null, null, null, null, []);
+
+        // Act
+        var result = await provider.GetRequiredService<ISender>().Send(new CreateBoardWorkItemCommand(create, WorkItemStatus.Done));
+
+        // Assert
+        Assert.Equal(OperationStatus.Success, result.Status);
+        Assert.False(result.Value!.TargetReached);
+        var items = await session.Context.WorkItems.ToListAsync();
+        Assert.Equal(2, items.Count);
+        Assert.Equal(WorkItemStatus.InReview, items.Single(item => item.Id == result.Value.Id).Status);
+        Assert.Equal(WorkItemStatus.Backlog, items.Single(item => item.ParentId == result.Value.Id).Status);
+    }
+
     private static IServiceCollection Services(ProjectSession session) => new ServiceCollection()
         .AddLogging()
         .AddMediatR(options => options.RegisterServicesFromAssemblyContaining<CreateBoardWorkItemCommand>())
@@ -84,4 +110,19 @@ internal class BusyStatus : IPipelineBehavior<ChangeWorkItemStatusCommand, Opera
     public Task<OperationResult<int>> Handle(ChangeWorkItemStatusCommand request,
         RequestHandlerDelegate<OperationResult<int>> next, CancellationToken cancellationToken)
         => Task.FromResult(OperationResult<int>.Busy());
+}
+
+internal class UnfinishedChild(ISender sender) : IPipelineBehavior<ChangeWorkItemStatusCommand, OperationResult<int>>
+{
+    public async Task<OperationResult<int>> Handle(ChangeWorkItemStatusCommand request,
+        RequestHandlerDelegate<OperationResult<int>> next, CancellationToken cancellationToken)
+    {
+        if (request.ExpectedVersion == 1)
+        {
+            var child = await sender.Send(new CreateWorkItemCommand(request.ProjectId, WorkItemType.Subtask,
+                "Concurrent child", "", WorkItemPriority.Medium, null, null, request.WorkItemId, null, []), cancellationToken);
+            Assert.Equal(OperationStatus.Success, child.Status);
+        }
+        return await next();
+    }
 }

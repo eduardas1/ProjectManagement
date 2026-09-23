@@ -1,3 +1,4 @@
+using ProjectManagement.Domain.Enums;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using ProjectManagement.Application.Common;
@@ -10,6 +11,39 @@ namespace ProjectManagement.Tests;
 
 public class DocumentCommandTests
 {
+    [Fact]
+    public async Task FormatChangesKeepExactSourceAndEachRevisionsInterpretation()
+    {
+        // Arrange
+        await using var database = new ProjectTestDatabase();
+        var project = await PrepareAsync(database);
+        const string source = "# Original text\n  with exact spaces  \n";
+        int id;
+        await using (var owner = new DocumentSession(database.OpenContext(), new TestUser("owner")))
+            id = (await owner.CreateDocument.Handle(new(project, "Notes", source), default)).Value;
+
+        // Act
+        await using (var owner = new DocumentSession(database.OpenContext(), new TestUser("owner")))
+        {
+            Assert.Equal(OperationStatus.Success, (await owner.UpdateDocument.Handle(new(project, id, 1, "Notes", source, DocumentFormat.Markdown), default)).Status);
+            Assert.Equal(OperationStatus.Invalid, (await owner.UpdateDocument.Handle(new(project, id, 2, "Notes", source, (DocumentFormat)99), default)).Status);
+        }
+        await using var read = database.OpenContext();
+        var revisions = await read.DocumentRevisions.OrderBy(revision => revision.Version).ToListAsync();
+        var reader = new CollaborationReadRepository(read, new TestUser("owner"));
+        var document = await reader.GetDocumentAsync(project, id, default);
+        var original = await reader.GetRevisionAsync(project, id, revisions[0].Id, default);
+
+        // Assert
+        Assert.Equal(2, document!.Document.Version);
+        Assert.Equal(DocumentFormat.Markdown, document.Format);
+        Assert.Equal(DocumentFormat.PlainText, original!.Format);
+        Assert.Equal(source, original.Body);
+        Assert.Equal(source, document.Body);
+        Assert.Equal(new[] { DocumentFormat.PlainText, DocumentFormat.Markdown }, revisions.Select(revision => revision.Format));
+        Assert.All(revisions, revision => Assert.Equal(source, revision.Body));
+    }
+
     [Fact]
     public async Task SharedEditsKeepImmutableSnapshotsAcrossArchiveVersionGaps()
     {

@@ -46,6 +46,11 @@
           "Microsoft.EntityFrameworkCore": "10.0.12"
         }
       },
+      "Markdig": {
+        "type": "Transitive",
+        "resolved": "1.5.0",
+        "contentHash": "oEm6N4PYFPUZiJ5e89993AE6hfC8EWRGD5M8nyoSJbwD4GgW818mjlQCk++SdTV4godaN50Ybcmm4j2Dp76oIQ=="
+      },
       "MediatR": {
         "type": "Transitive",
         "resolved": "12.5.0",
@@ -402,6 +407,14 @@
           "Microsoft.EntityFrameworkCore.Sqlite": "[10.0.13, )",
           "ProjectManagement.Application": "[1.0.0, )",
           "ProjectManagement.Domain": "[1.0.0, )"
+        }
+      },
+      "projectmanagement.web": {
+        "type": "Project",
+        "dependencies": {
+          "Markdig": "[1.5.0, )",
+          "ProjectManagement.Application": "[1.0.0, )",
+          "ProjectManagement.Infrastructure": "[1.0.0, )"
         }
       }
     }

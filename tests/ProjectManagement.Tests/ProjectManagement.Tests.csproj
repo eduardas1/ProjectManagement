@@ -13,6 +13,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <ProjectReference Include="../../src/ProjectManagement.Infrastructure/ProjectManagement.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/ProjectManagement.Web/ProjectManagement.Web.csproj" />
     <ProjectReference Include="../../src/ProjectManagement.Application/ProjectManagement.Application.csproj" />
   </ItemGroup>
   <ItemGroup>

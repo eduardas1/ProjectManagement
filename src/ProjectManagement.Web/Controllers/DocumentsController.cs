@@ -68,7 +68,7 @@ public class DocumentsController(ISender sender) : Controller
         model.Project = project;
         if (ModelState.IsValid)
         {
-            var result = await sender.Send(new CreateDocumentCommand(projectId, model.Title, model.Body), cancellationToken);
+            var result = await sender.Send(new CreateDocumentCommand(projectId, model.Title, model.Body, model.Format), cancellationToken);
             if (result.Status == OperationStatus.NotFound) return NotFound();
             if (result.Status == OperationStatus.Success)
             {
@@ -88,7 +88,7 @@ public class DocumentsController(ISender sender) : Controller
         if (details == null) return NotFound();
         if (details.Project.IsArchived || details.Document.IsArchived) return RedirectToAction(nameof(Details), new { projectId, id });
         return View(new EditDocumentViewModel { ProjectId = projectId, DocumentId = id, Title = details.Document.Title,
-            Body = details.Body, ExpectedVersion = details.Document.Version, Project = details.Project });
+            Body = details.Body, Format = details.Format, ExpectedVersion = details.Document.Version, Project = details.Project });
     }
 
     [HttpPost]
@@ -100,7 +100,7 @@ public class DocumentsController(ISender sender) : Controller
         model.Project = details.Project;
         if (ModelState.IsValid)
         {
-            var result = await sender.Send(new UpdateDocumentCommand(projectId, id, model.ExpectedVersion, model.Title, model.Body), cancellationToken);
+            var result = await sender.Send(new UpdateDocumentCommand(projectId, id, model.ExpectedVersion, model.Title, model.Body, model.Format), cancellationToken);
             if (result.Status == OperationStatus.NotFound) return NotFound();
             if (result.Status == OperationStatus.Success)
             {
@@ -145,6 +145,16 @@ public class DocumentsController(ISender sender) : Controller
         }
         else Response.StatusCode = StatusCodes.Status400BadRequest;
         return ArchiveForm(model);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Preview(DocumentPreviewViewModel model, CancellationToken cancellationToken)
+    {
+        var project = await sender.Send(new GetDocumentProjectQuery(model.ProjectId), cancellationToken);
+        if (project == null) return NotFound();
+        if (!ModelState.IsValid) return BadRequest("Invalid preview request.");
+        Response.Headers["X-Workboard-Partial"] = "document-preview";
+        return Content(ProjectManagement.Web.Services.DocumentRenderer.Render(model.Body ?? "", model.Format), "text/html");
     }
 
     private bool IsAjax => Request.Headers["X-Requested-With"] == "XMLHttpRequest";

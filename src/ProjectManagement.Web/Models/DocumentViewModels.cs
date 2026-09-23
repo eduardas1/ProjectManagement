@@ -1,3 +1,4 @@
+using ProjectManagement.Domain.Enums;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
@@ -13,6 +14,8 @@ public class CreateDocumentViewModel
     public string Title { get; set; } = "";
     [StringLength(100000), DisplayFormat(ConvertEmptyStringToNull = false)]
     public string? Body { get; set; }
+    [EnumDataType(typeof(DocumentFormat))]
+    public DocumentFormat Format { get; set; }
     [BindNever, ValidateNever]
     public WorkProject Project { get; set; } = null!;
 }
@@ -34,4 +37,13 @@ public class ArchiveDocumentViewModel
     public bool? IsArchived { get; set; }
     [BindNever, ValidateNever]
     public DocumentDetails Details { get; set; } = null!;
+}
+
+public class DocumentPreviewViewModel
+{
+    public int ProjectId { get; set; }
+    [StringLength(100000), DisplayFormat(ConvertEmptyStringToNull = false)]
+    public string? Body { get; set; }
+    [EnumDataType(typeof(DocumentFormat))]
+    public DocumentFormat Format { get; set; }
 }

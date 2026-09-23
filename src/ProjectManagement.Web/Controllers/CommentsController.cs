@@ -130,7 +130,7 @@ public class CommentsController(ISender sender) : Controller
     private IActionResult CommentForm(string name, object model)
     {
         if (!IsAjax) return View(name, model);
-        Response.Headers["X-Workboard-Partial"] = "modal";
+        Response.Headers["X-Workboard-Partial"] = Request.Headers["X-Workboard-View"] == "inline-comment" ? "inline-comment" : "modal";
         return PartialView("_" + name, model);
     }
 

@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap-theme.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
-<body>
+<body data-current-user-id="@User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value">
     <nav class="navbar navbar-default">
         <div class="container-fluid">
             <div class="navbar-header">
@@ -79,6 +79,8 @@
         <script src="~/js/board.js" asp-append-version="true"></script>
         <script src="~/js/workspace.js" asp-append-version="true"></script>
         <script src="~/js/preview-resize.js" asp-append-version="true"></script>
+        <script src="~/js/document-preview.js" asp-append-version="true"></script>
+        <script src="~/js/inline-comments.js" asp-append-version="true"></script>
         <script src="~/js/status.js" asp-append-version="true"></script>
         <script src="~/js/context-regions.js" asp-append-version="true"></script>
         <script src="~/js/document-dirty.js" asp-append-version="true"></script>

@@ -1,9 +1,10 @@
 @model ProjectManagement.Application.Comments.WorkComments
+<div data-comment-list data-comment-project="@Model.Work.Project.Id" data-comment-work="@Model.Work.Id">
 @if (Model.Work.Project.IsArchived || Model.Work.IsArchived)
 { <div class="alert alert-info">This @(Model.Work.Project.IsArchived ? "project" : "work item") is archived.</div> }
 <p>
 @if (!Model.Work.Project.IsArchived && !Model.Work.IsArchived)
-{ <a data-modal-form data-modal-title="Add comment" asp-action="Create" asp-route-projectId="@Model.Work.Project.Id" asp-route-workItemId="@Model.Work.Id" class="btn btn-primary">Add comment</a> }
+{ <a data-inline-comment data-inline-title="Add comment" asp-action="Create" asp-route-projectId="@Model.Work.Project.Id" asp-route-workItemId="@Model.Work.Id" class="btn btn-primary">Add comment</a> }
 </p>
 @if (Model.Total == 0) { <p>No comments.</p> }
 else
@@ -27,7 +28,7 @@ else
                 {
                     <p class="comment-actions">
                     @if (comment.IsAuthor)
-                    { <a class="btn btn-link btn-sm" data-modal-form data-modal-title="Edit comment" asp-action="Edit" asp-route-projectId="@Model.Work.Project.Id" asp-route-workItemId="@Model.Work.Id" asp-route-id="@comment.Id">Edit</a> }
+                    { <a class="btn btn-link btn-sm" data-inline-comment data-inline-title="Edit comment" asp-action="Edit" asp-route-projectId="@Model.Work.Project.Id" asp-route-workItemId="@Model.Work.Id" asp-route-id="@comment.Id">Edit</a> }
                     @if (comment.CanRemove)
                     { <a class="btn btn-link btn-sm" data-modal-form data-modal-title="Remove comment" asp-action="Remove" asp-route-projectId="@Model.Work.Project.Id" asp-route-workItemId="@Model.Work.Id" asp-route-id="@comment.Id">Remove</a> }
                     </p>
@@ -43,3 +44,5 @@ else
     { <li><a data-context-link asp-action="Index" asp-route-projectId="@Model.Work.Project.Id" asp-route-workItemId="@Model.Work.Id" asp-route-page="@(Model.Page + 1)">Next</a></li> }
     </ul></nav>
 }
+
+</div>

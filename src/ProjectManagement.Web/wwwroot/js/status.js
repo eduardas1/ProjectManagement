@@ -59,7 +59,15 @@
     $(document).on('submit', '[data-inline-status]', function (event) {
         event.preventDefault();
         if ($('#context-modal').data('mutation-pending') === true || $('#context-modal').hasClass('in') || $('#work-board').data('mutation-pending') === true || $('#work-board').data('requires-refresh') === true) return;
-        var form = $(this), reads = scopes(form), fields = form.serialize();
+        var form = $(this);
+        if (window.projectInlineComments && window.projectInlineComments.active) {
+            window.projectInlineComments.confirmLeave().then(function (leave) {
+                if (leave) form.trigger('submit');
+                else form.find('select').val(form.find('option').first().val());
+            });
+            return;
+        }
+        var reads = scopes(form), fields = form.serialize();
         form.find('select,button').prop('disabled', true); notice(form, 'Saving status…', false); busy(true, false);
         $.ajax({url: this.action, method: 'POST', data: fields, timeout: 20000}).done(function (result) {
             refresh(reads, form, result && result.saved === true ? 'Status saved.' : 'Check the current saved status.');

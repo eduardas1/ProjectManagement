@@ -173,6 +173,10 @@
     });
     function dismiss() {
         if (mutationPending()) return;
+        if (window.projectInlineComments && window.projectInlineComments.active) {
+            window.projectInlineComments.confirmLeave().then(function (leave) { if (leave) dismiss(); });
+            return;
+        }
         if (window.history.state && window.history.state.workboardPreview) window.history.back();
         else close();
     }
@@ -211,6 +215,13 @@
         }
         viewStates[contentUrl] = captureView();
         if (mutationPending()) { waitingForHistory = true; return; }
+        if (window.projectInlineComments && window.projectInlineComments.active) {
+            window.projectInlineComments.confirmLeave().then(function (leave) {
+                if (leave) restoreHistory(window.history.state);
+                else waitingForHistory = true;
+            });
+            return;
+        }
         restoreHistory(event.state);
     });
     function resumeHistory() {

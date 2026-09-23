@@ -1,3 +1,5 @@
+using ProjectManagement.Domain.Enums;
+
 namespace ProjectManagement.Domain.Entities;
 
 public class ProjectDocument
@@ -6,6 +8,7 @@ public class ProjectDocument
     public int ProjectId { get; set; }
     public string Title { get; set; } = "";
     public string Body { get; set; } = "";
+    public DocumentFormat Format { get; set; }
     public string CreatedById { get; set; } = "";
     public string UpdatedById { get; set; } = "";
     public bool IsArchived { get; set; }

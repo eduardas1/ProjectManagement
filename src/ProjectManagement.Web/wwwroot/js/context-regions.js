@@ -6,6 +6,10 @@
         return url.origin === window.location.origin ? url.href : null;
     }
     function read(target, url, focus) {
+        if (window.projectInlineComments && window.projectInlineComments.contains(target)) {
+            window.projectInlineComments.confirmLeave().then(function (leave) { if (leave) read(target, url, focus); });
+            return;
+        }
         var current = (target.data('read-generation') || 0) + 1;
         var previous = target.data('read-request');
         target.data('read-generation', current);

@@ -119,8 +119,8 @@ public class CollaborationReadRepository(ApplicationDbContext context, ICurrentU
         var query = DocumentQuery(projectId).Where(document => document.Id == documentId);
         var info = await SelectDocumentInfo(query).SingleOrDefaultAsync(cancellationToken);
         if (info == null) return null;
-        var body = await query.Select(document => document.Body).SingleOrDefaultAsync(cancellationToken);
-        if (body == null) return null;
+        var content = await query.Select(document => new { document.Body, document.Format }).SingleOrDefaultAsync(cancellationToken);
+        if (content == null) return null;
         var history = await context.ChangeEvents.AsNoTracking().Where(change => change.ProjectId == projectId && change.DocumentId == documentId
                 && context.ProjectMembers.Any(member => member.ProjectId == projectId && member.UserId == currentUser.UserId))
             .OrderByDescending(change => change.OccurredAtUtc).ThenByDescending(change => change.Id).Take(50)
@@ -130,7 +130,7 @@ public class CollaborationReadRepository(ApplicationDbContext context, ICurrentU
                 people.Where(user => user.Id == change.ActorId).Select(user => user.LastName).Single(),
                 people.Where(user => user.Id == change.ActorId).Select(user => user.Email).Single()),
                 change.OccurredAtUtc, change.Summary)).ToListAsync(cancellationToken);
-        return new DocumentDetails(project, info, body, history);
+        return new DocumentDetails(project, info, content.Body, history, content.Format);
     }
 
     public async Task<DocumentRevisions?> ListRevisionsAsync(int projectId, int documentId, int page, CancellationToken cancellationToken)
@@ -159,8 +159,8 @@ public class CollaborationReadRepository(ApplicationDbContext context, ICurrentU
         var query = RevisionQuery(projectId, documentId).Where(revision => revision.Id == revisionId);
         var info = await SelectRevisionInfo(query).SingleOrDefaultAsync(cancellationToken);
         if (info == null) return null;
-        var body = await query.Select(revision => revision.Body).SingleOrDefaultAsync(cancellationToken);
-        return body == null ? null : new DocumentRevisionDetails(project, document, info, body);
+        var content = await query.Select(revision => new { revision.Body, revision.Format }).SingleOrDefaultAsync(cancellationToken);
+        return content == null ? null : new DocumentRevisionDetails(project, document, info, content.Body, content.Format);
     }
 
     public async Task<AttachmentTarget?> GetAttachmentTargetAsync(int projectId, int? workItemId, int? documentId, CancellationToken cancellationToken)

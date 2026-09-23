@@ -10,7 +10,7 @@ public static class DocumentChanges
         => repository.AddRevision(new DocumentRevision
         {
             ProjectId = document.ProjectId, DocumentId = document.Id, Version = document.Version,
-            Title = document.Title, Body = document.Body, EditorId = document.UpdatedById,
+            Title = document.Title, Body = document.Body, Format = document.Format, EditorId = document.UpdatedById,
             SavedAtUtc = document.UpdatedAtUtc
         });
 

@@ -1,3 +1,5 @@
+using ProjectManagement.Domain.Enums;
+
 namespace ProjectManagement.Domain.Entities;
 
 public class DocumentRevision
@@ -8,6 +10,7 @@ public class DocumentRevision
     public long Version { get; set; }
     public string Title { get; set; } = "";
     public string Body { get; set; } = "";
+    public DocumentFormat Format { get; set; }
     public string EditorId { get; set; } = "";
     public DateTime SavedAtUtc { get; set; }
 }

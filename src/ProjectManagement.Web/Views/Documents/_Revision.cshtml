@@ -4,5 +4,6 @@
 <p class="project-text">Editor: <partial name="_Person" model="Model.Revision.Editor" /></p>
 <p><a data-context-link asp-action="Revisions" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Document.Id">Back to revision history</a>
 <a asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Document.Id" class="btn btn-default">Current document</a></p>
-@if (Model.Body.Length == 0) { <p>No document text.</p> }
-else { <div class="project-description" data-document-snapshot-text>@Model.Body</div> }
+<article class="document-reading" aria-label="Revision content">
+    <div data-document-snapshot-text><partial name="_DocumentBody" model="@(new DocumentPreviewViewModel { Body = Model.Body, Format = Model.Format })" /></div>
+</article>

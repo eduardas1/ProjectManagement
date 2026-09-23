@@ -44,6 +44,7 @@ public class ProjectDocumentConfiguration : IEntityTypeConfiguration<ProjectDocu
         builder.HasAlternateKey(document => new { document.ProjectId, document.Id });
         builder.Property(document => document.Title).HasMaxLength(200);
         builder.Property(document => document.Body).HasMaxLength(100000);
+        builder.Property(document => document.Format).HasDefaultValue(ProjectManagement.Domain.Enums.DocumentFormat.PlainText);
         builder.Property(document => document.Version).IsConcurrencyToken();
         builder.HasOne<Project>().WithMany().HasForeignKey(document => document.ProjectId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<IdentityUser>().WithMany().HasForeignKey(document => document.CreatedById).OnDelete(DeleteBehavior.Restrict);
@@ -66,6 +67,7 @@ public class DocumentRevisionConfiguration : IEntityTypeConfiguration<DocumentRe
         });
         builder.Property(revision => revision.Title).HasMaxLength(200);
         builder.Property(revision => revision.Body).HasMaxLength(100000);
+        builder.Property(revision => revision.Format).HasDefaultValue(ProjectManagement.Domain.Enums.DocumentFormat.PlainText);
         builder.HasIndex(revision => new { revision.DocumentId, revision.Version }).IsUnique();
         builder.HasOne<ProjectDocument>().WithMany().HasForeignKey(revision => new { revision.ProjectId, revision.DocumentId })
             .HasPrincipalKey(document => new { document.ProjectId, document.Id }).OnDelete(DeleteBehavior.Restrict);

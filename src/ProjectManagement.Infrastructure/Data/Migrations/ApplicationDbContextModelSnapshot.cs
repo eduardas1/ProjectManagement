@@ -413,6 +413,11 @@ namespace ProjectManagement.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Format")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
                     b.Property<int>("ProjectId")
                         .HasColumnType("INTEGER");
 
@@ -563,6 +568,11 @@ namespace ProjectManagement.Infrastructure.Data.Migrations
                     b.Property<string>("CreatedById")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("Format")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
 
                     b.Property<bool>("IsArchived")
                         .HasColumnType("INTEGER");

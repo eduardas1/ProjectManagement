@@ -1,6 +1,7 @@
 using System.Globalization;
 using Gridify.Syntax;
 using ProjectManagement.Domain.Enums;
+using ProjectManagement.Application.Search;
 using ProjectManagement.Application.Interfaces;
 
 namespace ProjectManagement.Infrastructure.Search;
@@ -40,14 +41,17 @@ public class WorkSearchSyntax : ISearchDefinitionValidator
             if (++comparisons > 32) return "Use at most 32 comparisons.";
             if (binary.Left is not FieldExpressionSyntax field || binary.Right is not ValueExpressionSyntax value
                 || field.Indexer != null) return "Use a supported field comparison.";
-            var error = ValidateComparison(field.FieldToken.Text, binary.OperatorToken.Kind, value);
+            var error = ValidateComparison(field.FieldToken.Text, binary.OperatorToken.Kind, binary.OperatorToken.Text, value);
             if (error != null) return error;
         }
         return null;
     }
 
-    private static string? ValidateComparison(string field, SyntaxKind op, ValueExpressionSyntax value)
+    private static string? ValidateComparison(string field, SyntaxKind op, string operatorText, ValueExpressionSyntax value)
     {
+        var definition = WorkSearchGrammar.Fields.SingleOrDefault(candidate => candidate.Name == field);
+        if (definition == null) return "Use one of the listed search fields.";
+        if (!definition.Operators.Contains(operatorText, StringComparer.Ordinal)) return "Use a supported operator for this field.";
         var text = value.ValueToken.Text ?? "";
         if (value.IsCaseInsensitive && text.Any(character => character > 127))
             return "Use exact text without /i for non-ASCII letters.";

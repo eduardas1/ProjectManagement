@@ -69,7 +69,7 @@
                     entry.view = new cm.EditorView({parent: holder[0], state: cm.EditorState.create({doc: textarea.val(), extensions: [
                         cm.EditorView.lineWrapping, cm.history(), cm.keymap.of(binding.concat(cm.completionKeymap, cm.defaultKeymap, cm.historyKeymap)),
                         cm.EditorView.contentAttributes.of({'aria-label': 'Advanced expression', 'aria-describedby': 'expression-help', 'spellcheck': 'false'}),
-                        cm.autocompletion({override: [complete], activateOnTyping: true}),
+                        cm.autocompletion({override: [complete], activateOnTyping: true, defaultKeymap: false, interactionDelay: 0}),
                         cm.EditorState.transactionFilter.of(function (transaction) { return transaction.newDoc.length > 2000 && transaction.newDoc.length > transaction.startState.doc.length && transaction.docChanged ? [] : transaction; }),
                         cm.EditorView.updateListener.of(function (update) { if (update.docChanged) { textarea.val(update.state.doc.toString()); changed(); } })
                     ]})});

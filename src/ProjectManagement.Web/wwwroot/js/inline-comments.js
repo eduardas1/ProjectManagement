@@ -77,8 +77,9 @@
         if (!list.length) return;
         var state = {url: url, trigger: trigger, list: list, baseline: '', locked: false};
         state.host = $('<section>').attr('data-inline-comment-editor', '').addClass('inline-comment-editor');
-        $('<button type="button">').attr('data-inline-close', '').attr('aria-label', 'Close comment editor').addClass('btn btn-default pull-right').text('×').appendTo(state.host);
-        $('<h3>').text($(trigger).attr('data-inline-title')).appendTo(state.host);
+        var heading = $('<div>').addClass('inline-comment-heading').appendTo(state.host);
+        $('<h3>').text($(trigger).attr('data-inline-title')).appendTo(heading);
+        $('<button type="button">').attr('data-inline-close', '').attr('aria-label', 'Close comment editor').addClass('btn btn-default').text('×').appendTo(heading);
         state.notice = $('<p>').attr('role', 'status').appendTo(state.host);
         $('<div>').attr('data-inline-form', '').text('Loading comment…').appendTo(state.host);
         var article = $(trigger).closest('article');

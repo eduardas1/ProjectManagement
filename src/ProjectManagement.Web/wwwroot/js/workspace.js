@@ -226,6 +226,12 @@
     });
     function resumeHistory() {
         if (!waitingForHistory || contextDialogOpen || $('#context-modal').hasClass('in') || $('#context-modal').data('mutation-pending') === true) return;
+        if (window.projectInlineComments && window.projectInlineComments.active) {
+            window.projectInlineComments.confirmLeave().then(function (leave) {
+                if (leave && waitingForHistory) { waitingForHistory = false; restoreHistory(window.history.state); }
+            });
+            return;
+        }
         waitingForHistory = false; restoreHistory(window.history.state);
     }
     $(document).on('workboard:detail-updated', function (event, target) {

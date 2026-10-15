@@ -30,6 +30,7 @@
         }
         var rest = segment.slice(fieldEnd), spaces = /^\s*/.exec(rest)[0].length;
         var operatorStart = fieldEnd + spaces;
+        if (cursor < operatorStart) return null;
         var operator = /^[=!<>*^$]*/.exec(segment.slice(operatorStart))[0];
         if (segment[operatorStart] === '!') operator = /^![=*^$]?/.exec(segment.slice(operatorStart))[0];
         var operatorEnd = operatorStart + operator.length;

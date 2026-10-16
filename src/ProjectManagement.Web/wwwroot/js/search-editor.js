@@ -36,7 +36,9 @@
                 details.prop('open', false); form.find('[name="Input.Text"]')[0].focus(); changed();
             });
             form.find('[data-search-advanced]').on('click', function () {
-                details.prop('open', true); enhance().then(function () { entry.view ? entry.view.focus() : textarea.trigger('focus'); });
+                details.prop('open', true); enhance().then(function () {
+                    if (entry.live && document.contains(form[0]) && details.prop('open')) entry.view ? entry.view.focus() : textarea.trigger('focus');
+                });
             });
             form.find('[data-expression-clear]').on('click', function () {
                 if (entry.view) entry.view.dispatch({changes: {from: 0, to: entry.view.state.doc.length, insert: ''}});
@@ -44,12 +46,13 @@
                 changed();
             });
             textarea.on('input', changed); changed();
-            var loading = false;
+            var enhancement = null;
             function enhance() {
-                if (entry.view || loading) return Promise.resolve();
-                loading = true;
-                return vendor(form.attr('data-editor-source')).then(function (cm) {
+                if (entry.view) return Promise.resolve();
+                if (enhancement) return enhancement;
+                enhancement = vendor(form.attr('data-editor-source')).then(function (cm) {
                     if (!entry.live || !document.contains(form[0]) || entry.view) return;
+                    var wasFocused = textarea[0] === document.activeElement, caret = textarea[0].selectionStart;
                     var holder = $('<div>').addClass('search-code-editor').insertAfter(textarea);
                     var hint = $('<span>').addClass('sr-only').text('Advanced search expression. Use Ctrl+Space for suggestions.').insertBefore(holder);
                     function complete(context) {
@@ -66,7 +69,7 @@
                     }
                     var binding = [{key: 'Tab', run: function (view) { return cm.selectedCompletion(view.state) !== null && cm.acceptCompletion(view); }},
                         {key: 'Enter', run: function (view) { if (cm.acceptCompletion(view)) return true; form[0].requestSubmit(); return true; }}];
-                    entry.view = new cm.EditorView({parent: holder[0], state: cm.EditorState.create({doc: textarea.val(), extensions: [
+                    entry.view = new cm.EditorView({parent: holder[0], state: cm.EditorState.create({doc: textarea.val(), selection: {anchor: caret}, extensions: [
                         cm.EditorView.lineWrapping, cm.history(), cm.keymap.of(binding.concat(cm.completionKeymap, cm.defaultKeymap, cm.historyKeymap)),
                         cm.EditorView.contentAttributes.of({'aria-label': 'Advanced expression', 'aria-describedby': 'expression-help', 'spellcheck': 'false'}),
                         cm.autocompletion({override: [complete], activateOnTyping: true, defaultKeymap: false, interactionDelay: 0}),
@@ -74,10 +77,15 @@
                         cm.EditorView.updateListener.of(function (update) { if (update.docChanged) { textarea.val(update.state.doc.toString()); changed(); } })
                     ]})});
                     textarea.addClass('hidden'); hint.attr('aria-hidden', 'true');
+                    if (wasFocused && details.prop('open')) {
+                        entry.view.focus();
+                        if (entry.view.state.doc.length) cm.startCompletion(entry.view);
+                    }
                     form.find('#expression-label').on('click', function (event) { event.preventDefault(); entry.view.focus(); });
                 }).catch(function () {
                     if (entry.live) indicator.text('Editor suggestions are unavailable. You can still use the expression field.');
-                }).finally(function () { loading = false; });
+                }).finally(function () { enhancement = null; });
+                return enhancement;
             }
             details.on('toggle', function () { if (this.open) enhance(); });
             if (details.prop('open')) enhance();

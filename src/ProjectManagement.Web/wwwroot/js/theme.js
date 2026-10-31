@@ -9,11 +9,14 @@
     function apply() {
         var dark = selected ? selected === 'dark' : system.matches;
         document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        var stylesheet = document.getElementById('dark-theme');
+        if (stylesheet) stylesheet.media = dark ? 'all' : 'not all';
         document.querySelectorAll('[data-theme-toggle]').forEach(function (button) {
             button.hidden = false;
             button.setAttribute('aria-label', 'Switch to ' + (dark ? 'light' : 'dark') + ' mode');
             button.setAttribute('aria-pressed', String(dark));
-            button.textContent = (dark ? 'Light' : 'Dark') + (button.hasAttribute('data-compact') ? '' : ' mode');
+            button.title = button.getAttribute('aria-label');
+            button.innerHTML = '<span aria-hidden="true">' + (dark ? '\u2600\uFE0E' : '\u263E') + '</span>';
         });
     }
     apply();

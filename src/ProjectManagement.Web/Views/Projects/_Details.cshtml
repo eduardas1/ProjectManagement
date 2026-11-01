@@ -1,6 +1,7 @@
 @model ProjectManagement.Application.Projects.ProjectDetails
 <template data-project-navigation data-project-id="@Model.Id"><partial name="~/Views/WorkItems/_WorkNavigation.cshtml" model="@(new ProjectManagement.Application.WorkItems.WorkProject(Model.Id, Model.Key, Model.Name, Model.IsArchived, Model.IsOwner))" /></template>
-<h1 class="project-text">@Model.Key - @Model.Name</h1>
+<template data-project-context data-project-id="@Model.Id"><partial name="_ProjectContext" model="@(new ProjectManagement.Application.WorkItems.WorkProject(Model.Id, Model.Key, Model.Name, Model.IsArchived, Model.IsOwner))" /></template>
+<h1>Overview</h1>
 @if (Model.IsArchived)
 {
     <div class="alert alert-info">This project is archived.</div>

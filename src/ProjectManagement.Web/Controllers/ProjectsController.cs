@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using ProjectManagement.Application.Common;
 using ProjectManagement.Application.Projects;
+using ProjectManagement.Application.WorkItems;
 using ProjectManagement.Web.Models;
 
 namespace ProjectManagement.Web.Controllers;
@@ -50,6 +51,7 @@ public class ProjectsController(ISender sender) : Controller
     {
         var project = await sender.Send(new GetProjectQuery(id), cancellationToken);
         if (project == null || !project.IsOwner) return NotFound();
+        ViewData["WorkProject"] = new WorkProject(project.Id, project.Key, project.Name, project.IsArchived, project.IsOwner);
         if (project.IsArchived) return RedirectToAction(nameof(Details), new { id });
         return View(new EditProjectViewModel
         {
@@ -64,6 +66,7 @@ public class ProjectsController(ISender sender) : Controller
         if (id != model.ProjectId) return NotFound();
         var project = await sender.Send(new GetProjectQuery(id), cancellationToken);
         if (project == null || !project.IsOwner) return NotFound();
+        ViewData["WorkProject"] = new WorkProject(project.Id, project.Key, project.Name, project.IsArchived, project.IsOwner);
         model.Key = project.Key;
         ModelState.Remove(nameof(model.Key));
         if (ModelState.IsValid)

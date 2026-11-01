@@ -1,7 +1,11 @@
 @using ProjectManagement.Domain.Enums
 @model ProjectManagement.Application.WorkItems.WorkItemList
-@{ ViewData["Title"] = Model.Project.Key + " work"; ViewData["WorkProject"] = Model.Project; }
-<h1 class="project-text">@Model.Project.Key work</h1>
+@{
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+    ViewData["Title"] = action == "Backlog" ? "Backlog" : action == "Cancelled" ? "Cancelled work" : "All work";
+    ViewData["WorkProject"] = Model.Project;
+}
+<h1>@ViewData["Title"]</h1>
 @if (Model.Project.IsArchived) { <div class="alert alert-info">This project is archived.</div> }
 <p class="action-links"><a data-workspace-link asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-status="@Model.Status" asp-route-archived="@(!Model.Archived)" class="btn btn-default">@(Model.Archived ? "Active work" : "Archived work")</a></p>
 <form data-workspace-get asp-action="Index" method="get" class="form-inline">

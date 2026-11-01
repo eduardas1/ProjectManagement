@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Project Management System</title>
+    <title>@(project == null ? "" : project.Key + " - ")@ViewData["Title"] - Project Management System</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap-theme.css" />
     <link rel="stylesheet" id="dark-theme" href="~/lib/bootstrap/dist/css/bootstrap-slate.min.css" media="not all" />
@@ -54,6 +54,7 @@
     <div class="@(project == null ? "" : "project-workspace")">
     @if (project != null) { <aside class="project-sidebar"><partial name="~/Views/WorkItems/_WorkNavigation.cshtml" model="project" /></aside> }
     <main class="@(project == null ? "container" : "workspace-main")" data-workspace-project="@project?.Id">
+    @if (project != null) { <partial name="_ProjectContext" model="project" /> }
     <div data-workspace-notice class="alert alert-danger hidden" role="alert"></div>
     <div data-workspace-content>
         @if (TempData["Success"] is string success && Context.Response.StatusCode < 400)

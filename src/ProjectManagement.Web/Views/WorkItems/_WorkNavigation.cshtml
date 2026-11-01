@@ -1,9 +1,9 @@
 @model ProjectManagement.Application.WorkItems.WorkProject
 <button type="button" class="btn btn-default visible-xs-block" data-toggle="collapse" data-target="#project-navigation" aria-controls="project-navigation" aria-expanded="false">Project navigation</button>
 <nav id="project-navigation" class="collapse project-navigation" aria-label="Project">
-<p class="project-text"><strong>@Model.Key</strong><br />@Model.Name</p>
+<p class="project-text"><span class="label label-primary project-key">@Model.Key</span><br />@Model.Name</p>
 <ul class="nav nav-pills nav-stacked">
-    <li><a asp-controller="Projects" asp-action="Details" asp-route-id="@Model.Id">Back to project</a></li>
+    <li><a asp-controller="Projects" asp-action="Details" asp-route-id="@Model.Id">Overview</a></li>
     <li><a data-workspace-link asp-controller="WorkItems" asp-action="Index" asp-route-projectId="@Model.Id" >All work</a></li>
     <li><a data-workspace-link asp-controller="WorkItems" asp-action="Backlog" asp-route-projectId="@Model.Id" >Backlog</a></li>
     <li><a data-workspace-link asp-controller="WorkItems" asp-action="Board" asp-route-projectId="@Model.Id" >Board</a></li>
@@ -11,6 +11,8 @@
     <li><a data-workspace-link asp-controller="Search" asp-action="Index" asp-route-projectId="@Model.Id" >Search</a></li>
     <li><a data-workspace-link asp-controller="Reports" asp-action="Index" asp-route-projectId="@Model.Id" >Progress</a></li>
     <li><a asp-controller="SavedSearches" asp-action="Index" asp-route-projectId="@Model.Id" >Saved searches</a></li>
+    <li><a asp-controller="Documents" asp-action="Index" asp-route-projectId="@Model.Id">Documents</a></li>
+    @if (Model.IsOwner) { <li><a asp-controller="Members" asp-action="Index" asp-route-id="@Model.Id">Members</a></li> }
     <li><a asp-controller="Labels" asp-action="Index" asp-route-projectId="@Model.Id" >Labels</a></li>
     @if (!Model.IsArchived) { <li><a asp-controller="WorkItems" data-modal-form data-modal-title="Create work item" data-modal-size="large" asp-action="Create" asp-route-projectId="@Model.Id" >Create work item</a></li> }
 </ul>

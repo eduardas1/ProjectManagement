@@ -1,6 +1,6 @@
 @model ProjectManagement.Application.Projects.ProjectDetails
 @{
-    ViewData["Title"] = Model.Key;
+    ViewData["Title"] = "Overview";
     ViewData["WorkProject"] = new ProjectManagement.Application.WorkItems.WorkProject(Model.Id, Model.Key, Model.Name, Model.IsArchived, Model.IsOwner);
 }
 

@@ -1,6 +1,6 @@
 @model ProjectManagement.Application.WorkItems.ProjectLabels
-@{ ViewData["Title"] = Model.Project.Key + " labels"; ViewData["WorkProject"] = Model.Project; }
-<h1 class="project-text">@Model.Project.Key labels</h1>
+@{ ViewData["Title"] = "Labels"; ViewData["WorkProject"] = Model.Project; }
+<h1>Labels</h1>
 <div class="alert hidden" role="status" data-modal-notice></div>
 <div id="project-labels" data-modal-list-url="@Url.Action("Index", "Labels", new { projectId = Model.Project.Id })">
     <partial name="_List" model="Model" />

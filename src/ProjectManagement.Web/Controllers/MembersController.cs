@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using ProjectManagement.Application.Common;
 using ProjectManagement.Application.Projects;
+using ProjectManagement.Application.WorkItems;
 using ProjectManagement.Web.Models;
 
 namespace ProjectManagement.Web.Controllers;
@@ -13,6 +14,7 @@ public class MembersController(ISender sender) : Controller
     {
         var project = await sender.Send(new GetProjectMembersQuery(id), cancellationToken);
         if (project == null) return NotFound();
+        ViewData["WorkProject"] = new WorkProject(project.ProjectId, project.ProjectKey, project.ProjectName, project.IsArchived, true);
         if (!IsAjax) return View(project);
         Response.Headers["X-Workboard-Partial"] = "list";
         return PartialView("_List", project);
@@ -23,6 +25,7 @@ public class MembersController(ISender sender) : Controller
     {
         var project = await sender.Send(new GetProjectMembersQuery(id), cancellationToken);
         if (project == null) return NotFound();
+        ViewData["WorkProject"] = new WorkProject(project.ProjectId, project.ProjectKey, project.ProjectName, project.IsArchived, true);
         if (project.IsArchived) return RedirectToAction(nameof(Index), new { id });
         return MemberForm("Add", new AddMemberViewModel { ProjectId = id, ProjectKey = project.ProjectKey, ExpectedVersion = project.Version });
     }
@@ -33,6 +36,7 @@ public class MembersController(ISender sender) : Controller
         if (id != model.ProjectId) return NotFound();
         var project = await sender.Send(new GetProjectMembersQuery(id), cancellationToken);
         if (project == null) return NotFound();
+        ViewData["WorkProject"] = new WorkProject(project.ProjectId, project.ProjectKey, project.ProjectName, project.IsArchived, true);
         model.ProjectKey = project.ProjectKey;
         ModelState.Remove(nameof(model.ProjectKey));
         if (ModelState.IsValid)
@@ -56,6 +60,7 @@ public class MembersController(ISender sender) : Controller
     {
         var project = await sender.Send(new GetProjectMembersQuery(id), cancellationToken);
         if (project == null) return NotFound();
+        ViewData["WorkProject"] = new WorkProject(project.ProjectId, project.ProjectKey, project.ProjectName, project.IsArchived, true);
         var member = project.Participants.SingleOrDefault(item => item.UserId == userId);
         if (member == null || member.IsOwner) return NotFound();
         return MemberForm("Remove", new RemoveMemberViewModel
@@ -70,6 +75,7 @@ public class MembersController(ISender sender) : Controller
         if (id != model.ProjectId) return NotFound();
         var project = await sender.Send(new GetProjectMembersQuery(id), cancellationToken);
         if (project == null) return NotFound();
+        ViewData["WorkProject"] = new WorkProject(project.ProjectId, project.ProjectKey, project.ProjectName, project.IsArchived, true);
         model.ProjectKey = project.ProjectKey;
         model.Person = project.Participants.SingleOrDefault(item => item.UserId == model.UserId)?.Person;
         model.Email = project.Participants.SingleOrDefault(item => item.UserId == model.UserId)?.Email ?? "";
@@ -96,6 +102,7 @@ public class MembersController(ISender sender) : Controller
     {
         var project = await sender.Send(new GetProjectMembersQuery(id), cancellationToken);
         if (project == null) return NotFound();
+        ViewData["WorkProject"] = new WorkProject(project.ProjectId, project.ProjectKey, project.ProjectName, project.IsArchived, true);
         return MemberForm("Transfer", new TransferOwnershipViewModel
         {
             ProjectId = id, ProjectKey = project.ProjectKey, ExpectedVersion = project.Version,
@@ -109,6 +116,7 @@ public class MembersController(ISender sender) : Controller
         if (id != model.ProjectId) return NotFound();
         var project = await sender.Send(new GetProjectMembersQuery(id), cancellationToken);
         if (project == null) return NotFound();
+        ViewData["WorkProject"] = new WorkProject(project.ProjectId, project.ProjectKey, project.ProjectName, project.IsArchived, true);
         model.ProjectKey = project.ProjectKey;
         model.Participants = project.Participants.Where(member => !member.IsOwner).ToList();
         ModelState.Remove(nameof(model.ProjectKey));

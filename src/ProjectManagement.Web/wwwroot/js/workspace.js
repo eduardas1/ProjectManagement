@@ -35,11 +35,23 @@
         return url.origin === window.location.origin && supported
             && url.searchParams.get('projectId') === main.attr('data-workspace-project') ? url : null;
     }
+    function sectionPath(value) {
+        var path = new URL(value, window.location.href).pathname.replace(/\/$/, '').replace(/\/Index$/i, '');
+        if (/^\/Projects\/(Details|Edit|Archive)(?:\/|$)/i.test(path)) return '/projects/details';
+        if (/^\/(Documents|Members|Labels|SavedSearches)(?:\/|$)/i.test(path)) return '/' + path.split('/')[1].toLowerCase();
+        if (/^\/WorkItems(?:\/|$)/i.test(path) && !/^\/WorkItems\/(Board|Backlog|Cancelled)$/i.test(path)) return '/workitems';
+        return path.toLowerCase();
+    }
     function setActive(url) {
+        var current = sectionPath(url);
         $('.project-navigation li').removeClass('active').find('a').removeAttr('aria-current');
-        $('.project-navigation a').each(function () {
-            if (new URL(this.href).pathname === new URL(url).pathname) $(this).parent().addClass('active').find('a').attr('aria-current', 'page');
+        $('.project-navigation a').not('[data-modal-form]').each(function () {
+            if (sectionPath(this.href) === current) $(this).parent().addClass('active').find('a').attr('aria-current', 'page');
         });
+    }
+    function updateTitle(heading) {
+        var key = main.find('[data-project-context-header]').attr('data-project-key');
+        document.title = (key ? key + ' - ' : '') + heading.text() + ' - Project Management System';
     }
     function syncPhone() {
         var visible = !panel.hasClass('hidden');
@@ -101,7 +113,7 @@
                 else window.history.pushState({workboardWorkspace: true, scroll: 0, boardScroll: viewStates[target.href] ? viewStates[target.href].boardScroll : null}, '', target.href);
             }
             var heading = content.find('h1').first();
-            if (heading.length) document.title = heading.text() + ' - Project Management System';
+            if (heading.length) updateTitle(heading);
             setActive(target.href); notice.addClass('hidden');
             if (phone.matches) $('#project-navigation').collapse('hide');
             $(document).trigger('workboard:workspace-updated');
@@ -236,7 +248,14 @@
     }
     $(document).on('workboard:detail-updated', function (event, target) {
         var navigation = target && target.find('template[data-project-navigation]')[0];
-        if (navigation && navigation.getAttribute('data-project-id') === $('main[data-workspace-project]').attr('data-workspace-project')) $('.project-sidebar').empty().append($(navigation.content).clone());
+        if (navigation && navigation.getAttribute('data-project-id') === main.attr('data-workspace-project')) {
+            $('.project-sidebar').empty().append($(navigation.content).clone());
+            var projectContext = target.find('template[data-project-context]')[0];
+            if (projectContext && projectContext.getAttribute('data-project-id') === main.attr('data-workspace-project')) main.children('[data-project-context-header]').replaceWith($(projectContext.content).clone());
+            setActive(contentUrl);
+            var heading = content.find('h1').first();
+            if (heading.length) updateTitle(heading);
+        }
     });
     $(document).on('workboard:mutation-finished', resumeHistory);
     $('#context-modal').on('show.bs.modal', function () { contextDialogOpen = true; cancelNavigation(); syncPhone(); }).on('hidden.bs.modal', function () { contextDialogOpen = false; syncPhone(); resumeHistory(); });

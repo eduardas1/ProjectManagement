@@ -1,0 +1,8 @@
+@model ProjectManagement.Application.WorkItems.WorkProject
+<div class="project-context page-header" data-project-context-header data-project-key="@Model.Key">
+    <span class="small text-muted">Project</span>
+    <a class="project-context-link" asp-controller="Projects" asp-action="Details" asp-route-id="@Model.Id">
+        <span class="label label-primary project-key">@Model.Key</span>
+        <span class="project-name">@Model.Name</span>
+    </a>
+</div>

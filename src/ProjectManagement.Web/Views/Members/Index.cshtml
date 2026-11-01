@@ -1,6 +1,6 @@
 @model ProjectManagement.Application.Projects.ProjectMembers
-@{ ViewData["Title"] = "Project members"; ViewData["WorkProject"] = new ProjectManagement.Application.WorkItems.WorkProject(Model.ProjectId, Model.ProjectKey, Model.ProjectName, Model.IsArchived, true); }
-<h1 class="project-text">@Model.ProjectKey members</h1>
+@{ ViewData["Title"] = "Members"; ViewData["WorkProject"] = new ProjectManagement.Application.WorkItems.WorkProject(Model.ProjectId, Model.ProjectKey, Model.ProjectName, Model.IsArchived, true); }
+<h1>Members</h1>
 <section data-modal-region data-modal-access-url="@Url.Action("Details", "Projects", new { id = Model.ProjectId })">
 <div data-modal-notice class="alert hidden" role="status"></div>
 <div data-modal-list-url="@Url.Action("Index", new { id = Model.ProjectId })"><partial name="_List" model="Model" /></div>

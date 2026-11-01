@@ -1,7 +1,7 @@
 @using ProjectManagement.Domain.Enums
 @model WorkSearchViewModel
-@{ ViewData["Title"] = Model.Options.Project.Key + " search"; ViewData["WorkProject"] = Model.Options.Project; }
-<h1 class="project-text">@Model.Options.Project.Key search</h1>
+@{ ViewData["Title"] = "Search"; ViewData["WorkProject"] = Model.Options.Project; }
+<h1>Search</h1>
 @if (Model.Options.Project.IsArchived) { <div class="alert alert-info">This project is archived. Its work remains searchable.</div> }
 <form data-workspace-get data-search-form data-editor-source="@Url.Content("~/lib/codemirror/codemirror.min.js")" asp-controller="Search" asp-action="Index" method="get">
     <input name="projectId" value="@Model.Options.Project.Id" type="hidden" />

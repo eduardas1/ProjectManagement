@@ -1,7 +1,7 @@
 @using System.Globalization
 @model ProjectProgressViewModel
-@{ ViewData["Title"] = Model.Project.Key + " progress"; ViewData["WorkProject"] = Model.Project; }
-<h1 class="project-text">@Model.Project.Key progress</h1>
+@{ ViewData["Title"] = "Progress"; ViewData["WorkProject"] = Model.Project; }
+<h1>Progress</h1>
 @if (Model.Project.IsArchived) { <div class="alert alert-info">This project is archived. Its progress remains available.</div> }
 <div asp-validation-summary="All" class="text-danger" role="alert"></div>
 <p>Filter: <code class="report-expression">@(string.IsNullOrEmpty(Model.Progress?.Expression ?? Model.Input.Expression) ? "All work" : Model.Progress?.Expression ?? Model.Input.Expression)</code></p>

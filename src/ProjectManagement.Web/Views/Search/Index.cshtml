@@ -83,20 +83,3 @@
         @if (results.Page < results.PageCount) { <li><a data-workspace-link asp-action="Index" asp-all-route-data="Model.Routes(results.Page + 1)">Next</a></li> }
     </ul></nav>
 }
-
-<section data-modal-region>
-<div class="alert hidden" role="status" data-modal-notice></div>
-@if (Model.Results is { Archived: false } current && !current.Project.IsArchived)
-{
-    <form asp-controller="SavedSearches" asp-action="Prepare" asp-route-projectId="@current.Project.Id" method="post" data-modal-open data-modal-title="Save search">
-        <input name="ProjectId" value="@current.Project.Id" type="hidden" /><input name="Expression" value="@current.Expression" type="hidden" /><input name="Ordering" value="@current.Ordering" type="hidden" /><input name="ReturnUrl" value="@(Context.Request.Path + Context.Request.QueryString)" type="hidden" />
-        <button type="submit" class="btn btn-default">Save search</button>
-    </form>
-}
-@if (Model.SavedSearches is { } saved)
-{
-    var returnUrl = Context.Request.Path + Context.Request.QueryString;
-    <div id="saved-searches" data-modal-list-url="@Url.Action("Index", "SavedSearches", new { projectId = saved.Project.Id, returnUrl })"><partial name="~/Views/SavedSearches/_List.cshtml" model="new SavedSearchListViewModel(saved, returnUrl)" /></div>
-}
-
-</section>

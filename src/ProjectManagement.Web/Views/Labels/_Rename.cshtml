@@ -5,7 +5,6 @@
     <div class="form-group">
         <label asp-for="Name"></label><input asp-for="Name" maxlength="40" autocomplete="off" class="form-control" />
     </div>
-    @if (!Model.Project.IsArchived)
-    { <button type="submit" class="btn btn-primary">Rename label</button> }
+     <button type="submit" class="btn btn-primary">Rename label</button>
     <a asp-action="Index" asp-route-projectId="@Model.ProjectId" class="btn btn-default" data-modal-cancel>Cancel</a>
 </form>

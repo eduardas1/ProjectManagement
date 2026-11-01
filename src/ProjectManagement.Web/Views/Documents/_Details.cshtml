@@ -1,12 +1,10 @@
 @model ProjectManagement.Application.Documents.DocumentDetails
 <div class="document-heading">
-    <div><p><a asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-archived="@Model.Document.IsArchived">Back to documents</a></p>
+    <div><p><a asp-action="Index" asp-route-projectId="@Model.Project.Id">Back to documents</a></p>
     <h1 class="project-text">@Model.Document.Title</h1></div>
-    @if (!Model.Project.IsArchived && !Model.Document.IsArchived)
-    { <a asp-action="Edit" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Document.Id" class="btn btn-primary">Edit document</a> }
+     <a asp-action="Edit" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Document.Id" class="btn btn-primary">Edit document</a>
 </div>
-@if (Model.Project.IsArchived || Model.Document.IsArchived)
-{ <div class="alert alert-info">This @(Model.Project.IsArchived ? "project" : "document") is archived.</div> }
+
 <div class="document-layout">
     <article class="document-reading" aria-label="Document content">
         <partial name="_DocumentBody" model="@(new DocumentPreviewViewModel { Body = Model.Body, Format = Model.Format })" />
@@ -20,9 +18,7 @@
                 <dt>Created by</dt><dd><partial name="_Person" model="Model.Document.CreatedBy" /></dd>
                 <dt>Created (UTC)</dt><dd>@Model.Document.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm")</dd>
             </dl>
-            @if (Model.Project.IsOwner && !Model.Project.IsArchived)
-            { <a data-modal-form data-modal-title="Archive or restore document" asp-action="Archive" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Document.Id" class="btn btn-default btn-sm">@(Model.Document.IsArchived ? "Restore document" : "Archive document")</a> }
-        </details>
+                    </details>
         <details><summary>Attachments</summary>
 <section data-modal-region data-context-region aria-label="Attachments">
 <div class="alert hidden" data-modal-notice role="status"></div>

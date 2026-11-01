@@ -13,6 +13,6 @@
     <li><a asp-controller="Documents" asp-action="Index" asp-route-projectId="@Model.Id">Documents</a></li>
     @if (Model.IsOwner) { <li><a asp-controller="Members" asp-action="Index" asp-route-id="@Model.Id">Members</a></li> }
     <li><a asp-controller="Labels" asp-action="Index" asp-route-projectId="@Model.Id" >Labels</a></li>
-    @if (!Model.IsArchived) { <li><a asp-controller="WorkItems" data-modal-form data-modal-title="Create work item" data-modal-size="large" asp-action="Create" asp-route-projectId="@Model.Id" >Create work item</a></li> }
+     <li><a asp-controller="WorkItems" data-modal-form data-modal-title="Create work item" data-modal-size="large" asp-action="Create" asp-route-projectId="@Model.Id" >Create work item</a></li>
 </ul>
 </nav>

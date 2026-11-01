@@ -9,7 +9,7 @@ namespace ProjectManagement.Infrastructure.Repositories;
 public class WorkItemRepository(ApplicationDbContext context) : IWorkItemRepository
 {
     public Task<WorkItem?> FindAsync(int projectId, int workItemId, CancellationToken cancellationToken)
-        => context.WorkItems.SingleOrDefaultAsync(work => work.ProjectId == projectId && work.Id == workItemId, cancellationToken);
+        => context.WorkItems.SingleOrDefaultAsync(work => work.ProjectId == projectId && !work.IsArchived && work.Id == workItemId, cancellationToken);
 
     public async Task<IReadOnlyList<WorkItem>> GetActiveDescendantsAsync(int projectId, int workItemId, CancellationToken cancellationToken)
         => await context.WorkItems.Where(work => work.ProjectId == projectId && !work.IsArchived

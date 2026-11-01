@@ -2,7 +2,7 @@
 @model WorkSearchViewModel
 @{ ViewData["Title"] = "Search"; ViewData["WorkProject"] = Model.Options.Project; }
 <h1>Search</h1>
-@if (Model.Options.Project.IsArchived) { <div class="alert alert-info">This project is archived. Its work remains searchable.</div> }
+
 <form data-workspace-get data-search-form data-editor-source="@Url.Content("~/lib/codemirror/codemirror.min.js")" asp-controller="Search" asp-action="Index" method="get">
     <input name="projectId" value="@Model.Options.Project.Id" type="hidden" />
     <div asp-validation-summary="All" class="text-danger" role="alert"></div>
@@ -41,7 +41,6 @@
     <div class="row">
         <div class="col-sm-6 form-group"><label asp-for="Input.Ordering">Order by</label><input asp-for="Input.Ordering" maxlength="200" placeholder="number" class="form-control" aria-describedby="ordering-help" /><p id="ordering-help" class="help-block">number, title or deadline, optionally asc or desc. Example: deadline desc,number.</p></div>
         <div class="col-sm-2 form-group"><label asp-for="Input.PageSize">Page size</label><input asp-for="Input.PageSize" type="number" min="1" max="100" class="form-control" /></div>
-        <div class="col-sm-4 form-group"><div class="checkbox"><label><input asp-for="Input.Archived" /> Search archived work instead of active work</label></div></div>
     </div>
     <button type="submit" class="btn btn-primary">Search</button>
     <a data-workspace-link asp-action="Index" asp-route-projectId="@Model.Options.Project.Id" class="btn btn-default">Clear</a>
@@ -57,22 +56,21 @@
 @if (Model.Results is { } results)
 {
     <h2>Results</h2>
-    @if (!results.Archived)
-    {
+
         <p class="action-links"><a data-workspace-link asp-controller="Reports" asp-action="Index" asp-route-projectId="@results.Project.Id" asp-route-Input.Expression="@results.Expression" asp-route-Input.Ordering="@results.Ordering" asp-route-Input.Page="@results.Page" asp-route-Input.PageSize="@results.PageSize" class="btn btn-default">Progress for these results</a></p>
-    }
+
     <p>Expression: <code class="search-expression">@(results.Expression.Length == 0 ? "All work" : results.Expression)</code></p>
-    <p>Order: <code>@results.Ordering</code>. @(results.Archived ? "Archived work" : "Active work").</p>
+    <p>Order: <code>@results.Ordering</code>.</p>
     @if (results.Total == 0) { <p>No matching work items.</p> }
     else
     {
         <div class="table-responsive"><table class="table table-striped search-results">
-            <thead><tr><th>Key</th><th>Title</th><th>Type</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Due date</th>@if (!results.Archived && !results.Project.IsArchived) { <th>Actions</th> }</tr></thead>
+            <thead><tr><th>Key</th><th>Title</th><th>Type</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Due date</th> <th>Actions</th> </tr></thead>
             <tbody>@foreach (var work in results.Items)
             {
                 <tr data-work-id="@work.Id"><td><a data-work-preview asp-controller="WorkItems" asp-action="Details" asp-route-projectId="@results.Project.Id" asp-route-id="@work.Id">@results.Project.Key-@work.Number</a></td>
                     <td class="project-text"><a data-work-preview asp-controller="WorkItems" asp-action="Details" asp-route-projectId="@results.Project.Id" asp-route-id="@work.Id">@work.Title</a></td><td><partial name="_WorkType" model="work.Type" /></td><td>@work.Status</td><td>@work.Priority</td><td><partial name="_Person" model="work.Assignee" /></td><td>@(work.DueDate?.ToString("yyyy-MM-dd") ?? "None")</td>
-                    @if (!results.Archived && !results.Project.IsArchived) { <td><a asp-controller="WorkItems" data-modal-form data-modal-title="Change status" asp-action="Status" asp-route-projectId="@results.Project.Id" asp-route-id="@work.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">Change status<span class="sr-only"> for @results.Project.Key-@work.Number</span></a></td> }
+                     <td><a asp-controller="WorkItems" data-modal-form data-modal-title="Change status" asp-action="Status" asp-route-projectId="@results.Project.Id" asp-route-id="@work.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">Change status<span class="sr-only"> for @results.Project.Key-@work.Number</span></a></td>
                 </tr>
             }</tbody>
         </table></div>

@@ -49,8 +49,8 @@ public class ProjectCommandTests
         Assert.Equal("owner", (await read.Context.ProjectMembers.SingleAsync()).UserId);
         Assert.Equal("ProjectCreated", (await read.Context.ChangeEvents.SingleAsync()).Action);
         Assert.Equal(DateTimeKind.Utc, project.CreatedAtUtc.Kind);
-        Assert.Single(await read.Repository.ListAccessibleAsync("owner", false, default));
-        Assert.Empty(await read.Repository.ListAccessibleAsync("other", false, default));
+        Assert.Single(await read.Repository.ListAccessibleAsync("owner", default));
+        Assert.Empty(await read.Repository.ListAccessibleAsync("other", default));
         Assert.Null(await read.Repository.GetDetailsAsync(project.Id, "other", default));
         Assert.NotNull(await read.Repository.GetDetailsAsync(project.Id, "owner", default));
         var members = await read.Repository.GetMembersAsync(project.Id, "owner", default);
@@ -139,11 +139,11 @@ public class ProjectCommandTests
 
         // Act
         var update = await member.Update.Handle(new(id, 2, "Changed", ""), default);
-        var archive = await other.Archive.Handle(new(id, 2, true), default);
+        var foreignUpdate = await other.Update.Handle(new(id, 2, "Changed", ""), default);
 
         // Assert
         Assert.Equal(OperationStatus.NotFound, update.Status);
-        Assert.Equal(OperationStatus.NotFound, archive.Status);
+        Assert.Equal(OperationStatus.NotFound, foreignUpdate.Status);
         Assert.NotNull(await member.Repository.GetDetailsAsync(id, "member", default));
         Assert.Null(await member.Repository.GetMembersAsync(id, "member", default));
         Assert.Null(await other.Repository.GetDetailsAsync(id, "other", default));
@@ -151,32 +151,35 @@ public class ProjectCommandTests
     }
 
     [Fact]
-    public async Task ArchiveIsReadOnlyAndRestoreRetainsTheProject()
+    public async Task LegacyRetiredProjectRemainsStoredAndUnavailable()
     {
         // Arrange
         await using var database = new ProjectTestDatabase();
         await database.InitializeAsync();
         await using var session = database.Open();
         var id = (await session.Create.Handle(new("AB", "Project", "Notes"), default)).Value;
+        var project = await session.Context.Projects.SingleAsync();
+        project.IsArchived = true;
+        await session.Context.SaveChangesAsync();
 
         // Act
-        var archive = await session.Archive.Handle(new(id, 1, true), default);
-        var edit = await session.Update.Handle(new(id, 2, "Changed", ""), default);
-        var add = await session.AddMember.Handle(new(id, 2, "member@example.test"), default);
-        var archived = await session.Repository.ListAccessibleAsync("owner", true, default);
-        var restore = await session.Archive.Handle(new(id, 2, false), default);
+        var edit = await session.Update.Handle(new(id, 1, "Changed", ""), default);
+        var add = await session.AddMember.Handle(new(id, 1, "member@example.test"), default);
+        var visible = await session.Repository.ListAccessibleAsync("owner", default);
+        var details = await session.Repository.GetDetailsAsync(id, "owner", default);
+        var members = await session.Repository.GetMembersAsync(id, "owner", default);
 
         // Assert
-        Assert.Equal(OperationStatus.Success, archive.Status);
-        Assert.Equal(OperationStatus.Invalid, edit.Status);
-        Assert.Equal(OperationStatus.Invalid, add.Status);
-        Assert.Single(archived);
-        Assert.Equal(OperationStatus.Success, restore.Status);
-        var project = await session.Context.Projects.SingleAsync();
+        Assert.Equal(OperationStatus.NotFound, edit.Status);
+        Assert.Equal(OperationStatus.NotFound, add.Status);
+        Assert.Empty(visible);
+        Assert.Null(details);
+        Assert.Null(members);
         Assert.Equal(id, project.Id);
+        Assert.True(project.IsArchived);
         Assert.Equal("Notes", project.Description);
-        Assert.Equal(3, project.Version);
-        Assert.Equal(3, await session.Context.ChangeEvents.CountAsync());
+        Assert.Equal(1, project.Version);
+        Assert.Single(await session.Context.ChangeEvents.ToListAsync());
     }
 
     [Fact]
@@ -190,14 +193,13 @@ public class ProjectCommandTests
         {
             id = (await owner.Create.Handle(new("AB", "Project", ""), default)).Value;
             await owner.AddMember.Handle(new(id, 1, "member@example.test"), default);
-            await owner.Archive.Handle(new(id, 2, true), default);
-            Assert.Equal(OperationStatus.Success, (await owner.Transfer.Handle(new(id, 3, "member"), default)).Status);
+            Assert.Equal(OperationStatus.Success, (await owner.Transfer.Handle(new(id, 2, "member"), default)).Status);
         }
         await using var member = database.Open("member");
 
         // Act
-        var removeOwner = await member.RemoveMember.Handle(new(id, 4, "member"), default);
-        var removeFormer = await member.RemoveMember.Handle(new(id, 4, "owner"), default);
+        var removeOwner = await member.RemoveMember.Handle(new(id, 3, "member"), default);
+        var removeFormer = await member.RemoveMember.Handle(new(id, 3, "owner"), default);
         await using var oldOwner = database.Open();
 
         // Assert
@@ -206,7 +208,7 @@ public class ProjectCommandTests
         Assert.Equal("member", (await member.Context.Projects.SingleAsync()).OwnerId);
         Assert.Equal("member", (await member.Context.ProjectMembers.SingleAsync()).UserId);
         Assert.Null(await oldOwner.Repository.GetDetailsAsync(id, "owner", default));
-        Assert.Equal(OperationStatus.NotFound, (await oldOwner.Transfer.Handle(new(id, 5, "owner"), default)).Status);
+        Assert.Equal(OperationStatus.NotFound, (await oldOwner.Transfer.Handle(new(id, 4, "owner"), default)).Status);
     }
 
     [Fact]

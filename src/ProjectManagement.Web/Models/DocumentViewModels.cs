@@ -27,17 +27,6 @@ public class EditDocumentViewModel : CreateDocumentViewModel
     public long ExpectedVersion { get; set; }
 }
 
-public class ArchiveDocumentViewModel
-{
-    public int ProjectId { get; set; }
-    public int DocumentId { get; set; }
-    [Range(1, long.MaxValue)]
-    public long ExpectedVersion { get; set; }
-    [Required]
-    public bool? IsArchived { get; set; }
-    [BindNever, ValidateNever]
-    public DocumentDetails Details { get; set; } = null!;
-}
 
 public class DocumentPreviewViewModel
 {

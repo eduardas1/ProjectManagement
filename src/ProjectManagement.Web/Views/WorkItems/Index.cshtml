@@ -6,10 +6,9 @@
     ViewData["WorkProject"] = Model.Project;
 }
 <h1>@ViewData["Title"]</h1>
-@if (Model.Project.IsArchived) { <div class="alert alert-info">This project is archived.</div> }
-<p class="action-links"><a data-workspace-link asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-status="@Model.Status" asp-route-archived="@(!Model.Archived)" class="btn btn-default">@(Model.Archived ? "Active work" : "Archived work")</a></p>
+
 <form data-workspace-get asp-action="Index" method="get" class="form-inline">
-    <input name="projectId" value="@Model.Project.Id" type="hidden" /><input name="archived" value="@Model.Archived.ToString().ToLowerInvariant()" type="hidden" />
+    <input name="projectId" value="@Model.Project.Id" type="hidden" />
     <div class="form-group"><label for="status">Status</label>
         <select name="status" id="status" class="form-control"><option value="">All statuses</option>
         @foreach (var status in Enum.GetValues<WorkItemStatus>()) { <option value="@status" selected="@(Model.Status == status)">@status</option> }
@@ -17,26 +16,24 @@
     </div>
     <button type="submit" class="btn btn-default">Filter</button>
 </form>
-<h2>@(Model.Archived ? "Archived work" : "Active work")@(Model.Status.HasValue ? " - " + Model.Status : "")</h2>
 @if (Model.Total == 0) { <p>No work items.</p> }
 else
 {
     <div class="table-responsive"><table class="table table-striped">
-        <thead><tr><th>Key</th><th>Title</th><th>Type</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Due date</th>@if (!Model.Archived && !Model.Project.IsArchived) { <th>Actions</th> }</tr></thead>
+        <thead><tr><th>Key</th><th>Title</th><th>Type</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Due date</th> <th>Actions</th> </tr></thead>
         <tbody>
         @foreach (var work in Model.Items)
         {
             <tr data-work-id="@work.Id"><td><a data-work-preview asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@work.Id">@Model.Project.Key-@work.Number</a></td>
                 <td class="project-text"><a data-work-preview asp-action="Details" asp-route-projectId="@Model.Project.Id" asp-route-id="@work.Id">@work.Title</a></td><td><partial name="_WorkType" model="work.Type" /></td><td>@work.Status</td><td>@work.Priority</td><td><partial name="_Person" model="work.Assignee" /></td><td>@(work.DueDate?.ToString("yyyy-MM-dd") ?? "None")</td>
-                @if (!Model.Archived && !Model.Project.IsArchived)
-                { <td><a data-modal-form data-modal-title="Change status" asp-action="Status" asp-route-projectId="@Model.Project.Id" asp-route-id="@work.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">Change status<span class="sr-only"> for @Model.Project.Key-@work.Number</span></a></td> }
+                 <td><a data-modal-form data-modal-title="Change status" asp-action="Status" asp-route-projectId="@Model.Project.Id" asp-route-id="@work.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">Change status<span class="sr-only"> for @Model.Project.Key-@work.Number</span></a></td>
             </tr>
         }
         </tbody>
     </table></div>
     <p>Page @Model.Page of @Model.PageCount (@Model.Total items)</p>
     <nav aria-label="Work item pages"><ul class="pager">
-        @if (Model.Page > 1) { <li><a data-workspace-link asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-archived="@Model.Archived" asp-route-status="@Model.Status" asp-route-page="@(Model.Page - 1)">Previous</a></li> }
-        @if (Model.Page < Model.PageCount) { <li><a data-workspace-link asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-archived="@Model.Archived" asp-route-status="@Model.Status" asp-route-page="@(Model.Page + 1)">Next</a></li> }
+        @if (Model.Page > 1) { <li><a data-workspace-link asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-status="@Model.Status" asp-route-page="@(Model.Page - 1)">Previous</a></li> }
+        @if (Model.Page < Model.PageCount) { <li><a data-workspace-link asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-status="@Model.Status" asp-route-page="@(Model.Page + 1)">Next</a></li> }
     </ul></nav>
 }

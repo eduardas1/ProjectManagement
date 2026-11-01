@@ -5,7 +5,7 @@ namespace ProjectManagement.Application.Interfaces;
 
 public interface IProjectRepository
 {
-    Task<IReadOnlyList<ProjectSummary>> ListAccessibleAsync(string userId, bool archived, CancellationToken cancellationToken);
+    Task<IReadOnlyList<ProjectSummary>> ListAccessibleAsync(string userId, CancellationToken cancellationToken);
     Task<ProjectDetails?> GetDetailsAsync(int projectId, string userId, CancellationToken cancellationToken);
     Task<ProjectMembers?> GetMembersAsync(int projectId, string ownerId, CancellationToken cancellationToken);
     Task<ProjectMember?> FindMemberAsync(int projectId, string userId, CancellationToken cancellationToken);

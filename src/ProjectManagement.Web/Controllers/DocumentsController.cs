@@ -9,11 +9,11 @@ namespace ProjectManagement.Web.Controllers;
 public class DocumentsController(ISender sender) : Controller
 {
     [HttpGet]
-    public async Task<IActionResult> Index([FromQuery] int projectId, bool archived = false, int page = 1,
+    public async Task<IActionResult> Index([FromQuery] int projectId, int page = 1,
         CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return BadRequest("Invalid document list request.");
-        var documents = await sender.Send(new ListDocumentsQuery(projectId, archived, page), cancellationToken);
+        var documents = await sender.Send(new ListDocumentsQuery(projectId, page), cancellationToken);
         return documents == null ? NotFound() : View(documents);
     }
 
@@ -113,39 +113,7 @@ public class DocumentsController(ISender sender) : Controller
         return View(model);
     }
 
-    [HttpGet]
-    public async Task<IActionResult> Archive([FromQuery] int projectId, [FromRoute] int id, CancellationToken cancellationToken)
-    {
-        var details = await sender.Send(new GetDocumentQuery(projectId, id), cancellationToken);
-        if (details == null || !details.Project.IsOwner) return NotFound();
-        if (details.Project.IsArchived) return RedirectToAction(nameof(Details), new { projectId, id });
-        return ArchiveForm(new ArchiveDocumentViewModel { ProjectId = projectId, DocumentId = id,
-            ExpectedVersion = details.Document.Version, IsArchived = !details.Document.IsArchived, Details = details });
-    }
 
-    [HttpPost]
-    public async Task<IActionResult> Archive([FromQuery] int projectId, [FromRoute] int id, ArchiveDocumentViewModel model,
-        CancellationToken cancellationToken)
-    {
-        if (projectId != model.ProjectId || id != model.DocumentId) return NotFound();
-        var details = await sender.Send(new GetDocumentQuery(projectId, id), cancellationToken);
-        if (details == null || !details.Project.IsOwner) return NotFound();
-        model.Details = details;
-        if (ModelState.IsValid)
-        {
-            var result = await sender.Send(new SetDocumentArchiveCommand(projectId, id, model.ExpectedVersion, model.IsArchived!.Value), cancellationToken);
-            if (result.Status == OperationStatus.NotFound) return NotFound();
-            if (result.Status == OperationStatus.Success)
-            {
-                if (IsAjax) return Json(new { saved = true, message = model.IsArchived == true ? "Document archived." : "Document restored." });
-                TempData["Success"] = model.IsArchived == true ? "Document archived." : "Document restored.";
-                return RedirectToAction(nameof(Details), new { projectId, id });
-            }
-            ApplyError(result);
-        }
-        else Response.StatusCode = StatusCodes.Status400BadRequest;
-        return ArchiveForm(model);
-    }
 
     [HttpPost]
     public async Task<IActionResult> Preview(DocumentPreviewViewModel model, CancellationToken cancellationToken)
@@ -159,12 +127,6 @@ public class DocumentsController(ISender sender) : Controller
 
     private bool IsAjax => Request.Headers["X-Requested-With"] == "XMLHttpRequest";
 
-    private IActionResult ArchiveForm(ArchiveDocumentViewModel model)
-    {
-        if (!IsAjax) return View("Archive", model);
-        Response.Headers["X-Workboard-Partial"] = "modal";
-        return PartialView("_Archive", model);
-    }
 
     private void ApplyError(OperationResult<int> result)
     {

@@ -37,7 +37,7 @@
     }
     function sectionPath(value) {
         var path = new URL(value, window.location.href).pathname.replace(/\/$/, '').replace(/\/Index$/i, '');
-        if (/^\/Projects\/(Details|Edit|Archive)(?:\/|$)/i.test(path)) return '/projects/details';
+        if (/^\/Projects\/(Details|Edit)(?:\/|$)/i.test(path)) return '/projects/details';
         if (/^\/(Documents|Members|Labels)(?:\/|$)/i.test(path)) return '/' + path.split('/')[1].toLowerCase();
         if (/^\/WorkItems(?:\/|$)/i.test(path) && !/^\/WorkItems\/(Board|Backlog|Cancelled)$/i.test(path)) return '/workitems';
         return path.toLowerCase();

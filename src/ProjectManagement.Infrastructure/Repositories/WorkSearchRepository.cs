@@ -52,6 +52,6 @@ public class WorkSearchRepository(ApplicationDbContext context, ICurrentUser cur
                 people.Where(user => user.Id == work.AssigneeId).Select(user => user.Email).FirstOrDefault() ?? "")), work.DueDate, work.Version))
             .ToListAsync(cancellationToken);
         return OperationResult<WorkSearchPage>.Success(new WorkSearchPage(selection.Project, selection.Expression, ordering,
-            input.Archived, page, input.PageSize, pages, total, items));
+            page, input.PageSize, pages, total, items));
     }
 }

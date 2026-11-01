@@ -1,14 +1,10 @@
 @model ProjectManagement.Application.Projects.ProjectMembers
-@if (Model.IsArchived)
-{
-    <div class="alert alert-info">This project is archived. You can revoke membership or transfer ownership.</div>
-}
+
 <p class="action-links">
     <a asp-controller="Projects" asp-action="Details" asp-route-id="@Model.ProjectId">Back to project</a>
-    @if (!Model.IsArchived)
-    {
+
         <a data-modal-form data-modal-title="Add member" asp-action="Add" asp-route-id="@Model.ProjectId" class="btn btn-primary">Add member</a>
-    }
+
     @if (Model.Participants.Any(member => !member.IsOwner))
     {
         <a data-modal-form data-modal-title="Transfer ownership" asp-action="Transfer" asp-route-id="@Model.ProjectId" class="btn btn-default">Transfer ownership</a>

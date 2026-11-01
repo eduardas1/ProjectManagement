@@ -18,7 +18,7 @@ public record WorkItemConnection(int TargetId, int Number, string Title, bool Is
 public record WorkHistory(PersonSummary Actor, DateTime OccurredAtUtc, string Summary, string DetailsJson);
 public record WorkItemOptions(WorkProject Project, IReadOnlyList<WorkAccount> Members,
     IReadOnlyList<LabelSummary> Labels, IReadOnlyList<RelatedWork> Items);
-public record WorkItemList(WorkProject Project, bool Archived, int Page, int PageCount, int Total,
+public record WorkItemList(WorkProject Project, int Page, int PageCount, int Total,
     IReadOnlyList<WorkItemSummary> Items, WorkItemStatus? Status = null);
 public record ProjectLabels(WorkProject Project, IReadOnlyList<LabelSummary> Items);
 public record WorkItemDetails(WorkProject Project, WorkItem Item, PersonSummary Creator, PersonSummary? Assignee,

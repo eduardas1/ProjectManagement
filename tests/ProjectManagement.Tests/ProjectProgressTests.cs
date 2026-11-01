@@ -71,7 +71,7 @@ public class ProjectProgressTests
         var cancelled = await report.GetProgressAsync(project, new WorkSearchInput { Expression = "status=Cancelled" }, default);
         var errors = new List<OperationResult<ProjectProgress>>();
         foreach (var input in new[] { new WorkSearchInput { Expression = "ProjectId=2" },
-            new WorkSearchInput { Expression = "status=(" }, new WorkSearchInput { Archived = true },
+            new WorkSearchInput { Expression = "status=(" },
             new WorkSearchInput { Ordering = "title junk desc" }, new WorkSearchInput { Page = 0 },
             new WorkSearchInput { DeadlineFrom = new DateOnly(2026, 11, 1), DeadlineThrough = new DateOnly(2026, 10, 1) } })
             errors.Add(await report.GetProgressAsync(project, input, default));
@@ -91,7 +91,7 @@ public class ProjectProgressTests
     }
 
     [Fact]
-    public async Task CurrentMembershipScopesCountsAndArchivedProjectReads()
+    public async Task CurrentMembershipRejectsRetiredProjectReads()
     {
         // Arrange
         await using var database = new ProjectTestDatabase();
@@ -120,8 +120,8 @@ public class ProjectProgressTests
         // Assert
         Assert.Equal(10, before.Value!.EligibleTotal);
         Assert.Equal(OperationStatus.NotFound, foreign.Status);
-        Assert.Equal(10, archived.Value!.EligibleTotal);
-        Assert.True(archived.Value.Project.IsArchived);
+        Assert.Equal(OperationStatus.NotFound, archived.Status);
+        Assert.Null(archived.Value);
         Assert.Equal(OperationStatus.NotFound, revoked.Status);
     }
 

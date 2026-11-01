@@ -1,8 +1,8 @@
 @model ProjectManagement.Application.WorkItems.ProjectLabels
 <h2 id="labels-title" tabindex="-1" data-modal-focus>Project labels (@Model.Items.Count)</h2>
-@if (Model.Project.IsArchived) { <div class="alert alert-info">This project is archived.</div> }
+
 <p><a asp-controller="WorkItems" asp-action="Index" asp-route-projectId="@Model.Project.Id">Back to work</a>
-@if (!Model.Project.IsArchived) { <a data-modal-form data-modal-title="Create label" asp-action="Create" asp-route-projectId="@Model.Project.Id" class="btn btn-primary">Create label</a> }
+ <a data-modal-form data-modal-title="Create label" asp-action="Create" asp-route-projectId="@Model.Project.Id" class="btn btn-primary">Create label</a>
 </p>
 @if (Model.Items.Count == 0) { <p>No project labels.</p> }
 else
@@ -12,12 +12,11 @@ else
         <tbody>@foreach (var label in Model.Items)
         {
             <tr data-label-id="@label.Id"><td class="project-text">@label.Name</td><td>@label.UsageCount</td><td>
-            @if (!Model.Project.IsArchived)
-            {
+
                 <a data-modal-form data-modal-title="Rename label" asp-action="Rename" asp-route-projectId="@Model.Project.Id" asp-route-id="@label.Id">Rename</a>
                 @if (Model.Project.IsOwner && label.UsageCount == 0)
                 { <a data-modal-form data-modal-title="Delete label" asp-action="Delete" asp-route-projectId="@Model.Project.Id" asp-route-id="@label.Id">Delete</a> }
-            }
+
             </td></tr>
         }</tbody>
     </table></div>

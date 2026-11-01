@@ -12,7 +12,7 @@ public interface ICollaborationReadRepository
     Task<AttachmentDetails?> GetAttachmentAsync(int projectId, int attachmentId, CancellationToken cancellationToken);
     Task<AttachmentDownload?> DownloadAttachmentAsync(int projectId, int attachmentId, CancellationToken cancellationToken);
     Task<WorkProject?> GetDocumentProjectAsync(int projectId, CancellationToken cancellationToken);
-    Task<ProjectDocuments?> ListDocumentsAsync(int projectId, bool archived, int page, CancellationToken cancellationToken);
+    Task<ProjectDocuments?> ListDocumentsAsync(int projectId, int page, CancellationToken cancellationToken);
     Task<DocumentDetails?> GetDocumentAsync(int projectId, int documentId, CancellationToken cancellationToken);
     Task<DocumentRevisions?> ListRevisionsAsync(int projectId, int documentId, int page, CancellationToken cancellationToken);
     Task<DocumentRevisionDetails?> GetRevisionAsync(int projectId, int documentId, int revisionId, CancellationToken cancellationToken);

@@ -1,8 +1,0 @@
-@model ArchiveProjectViewModel
-@{
-    var action = Model.IsArchived ? "Archive" : "Restore";
-    ViewData["Title"] = action + " project";
-}
-
-<h1>@action @Model.Key</h1>
-<partial name="_Archive" model="Model" />

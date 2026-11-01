@@ -182,8 +182,11 @@ public class WorkItemCommandTests
         await SetStatusAsync(database, epicId, WorkItemStatus.Todo);
         var valid = await RunAsync(database, session => session.Hierarchy.Handle(new(projectId, parentId, 1, null, epicId), default));
         var stale = await RunAsync(database, session => session.Hierarchy.Handle(new(projectId, parentId, 1, null, epicId), default));
-        await RunAsync(database, session => session.ArchiveWork.Handle(new(projectId, childId, 1, true), default));
-        await RunAsync(database, session => session.ArchiveWork.Handle(new(projectId, parentId, 2, true), default));
+        await using (var fixture = database.OpenContext())
+        {
+            foreach (var item in await fixture.WorkItems.Where(item => item.Id == childId || item.Id == parentId).ToListAsync()) item.IsArchived = true;
+            await fixture.SaveChangesAsync();
+        }
         var archivedParent = await CreateAsync(database, projectId, WorkItemType.Subtask, parentId: parentId);
         int foreignProject;
         await using (var session = database.Open()) foreignProject = (await session.Create.Handle(new("CD", "Other", ""), default)).Value;
@@ -205,7 +208,7 @@ public class WorkItemCommandTests
     }
 
     [Fact]
-    public async Task BlockingCycleIncludesArchivedIntermediaryAndRelationsKeepIndependentKinds()
+    public async Task BlockingCyclesAndIndependentKindsRetainStoredLegacyEdges()
     {
         // Arrange
         await using var database = new ProjectTestDatabase();
@@ -215,7 +218,11 @@ public class WorkItemCommandTests
         var last = (await CreateAsync(database, projectId)).Value;
         await AddLinkAsync(database, projectId, first, middle, WorkItemLinkKind.Blocks);
         await AddLinkAsync(database, projectId, middle, last, WorkItemLinkKind.Blocks);
-        await RunAsync(database, async session => await session.ArchiveWork.Handle(new(projectId, middle, await VersionAsync(database, middle), true), default));
+        await using (var fixture = database.OpenContext())
+        {
+            (await fixture.WorkItems.FindAsync(middle))!.IsArchived = true;
+            await fixture.SaveChangesAsync();
+        }
 
         // Act
         var cycle = await AddLinkAsync(database, projectId, last, first, WorkItemLinkKind.Blocks);
@@ -287,36 +294,32 @@ public class WorkItemCommandTests
     }
 
     [Fact]
-    public async Task RevocationOnArchivedProjectClearsOnlyActiveAssignmentsAndRestoreClearsOldAssignee()
+    public async Task RevocationClearsCurrentAssignmentsAndPreservesLegacyRows()
     {
         // Arrange
         await using var database = new ProjectTestDatabase();
         var projectId = await PrepareAsync(database);
         var active = (await CreateAsync(database, projectId, assigneeId: "member")).Value;
-        var archived = (await CreateAsync(database, projectId, assigneeId: "member")).Value;
-        await RunAsync(database, session => session.ArchiveWork.Handle(new(projectId, archived, 1, true), default));
-        await RunAsync(database, async session => await session.Archive.Handle(new(projectId, await ProjectVersionAsync(database, projectId), true), default));
+        var retired = (await CreateAsync(database, projectId, assigneeId: "member")).Value;
+        await using (var fixture = database.OpenContext())
+        {
+            (await fixture.WorkItems.FindAsync(retired))!.IsArchived = true;
+            await fixture.SaveChangesAsync();
+        }
 
         // Act
         var revoked = await RunAsync(database, async session => await session.RemoveMember.Handle(new(projectId, await ProjectVersionAsync(database, projectId), "member"), default));
-        await using (var read = database.OpenContext())
-        {
-            Assert.Null((await read.WorkItems.FindAsync(active))!.AssigneeId);
-            Assert.Equal("member", (await read.WorkItems.FindAsync(archived))!.AssigneeId);
-            Assert.False(await read.ProjectMembers.AnyAsync(member => member.ProjectId == projectId && member.UserId == "member"));
-        }
         var denied = await RunAsync(database, session => session.UpdateWork.Handle(new(projectId, active, 2, "Bad", "", WorkItemPriority.Medium, null, null, []), default), "member");
-        await RunAsync(database, async session => await session.Archive.Handle(new(projectId, await ProjectVersionAsync(database, projectId), false), default));
-        var restored = await RunAsync(database, session => session.ArchiveWork.Handle(new(projectId, archived, 2, false), default));
         await using var final = database.OpenContext();
 
         // Assert
         Assert.Equal(OperationStatus.Success, revoked.Status);
         Assert.Equal(OperationStatus.NotFound, denied.Status);
-        Assert.Equal(OperationStatus.Success, restored.Status);
-        Assert.Null((await final.WorkItems.FindAsync(archived))!.AssigneeId);
+        Assert.Null((await final.WorkItems.FindAsync(active))!.AssigneeId);
+        Assert.Equal("member", (await final.WorkItems.FindAsync(retired))!.AssigneeId);
         Assert.Equal(2, (await final.WorkItems.FindAsync(active))!.Version);
-        Assert.Equal(3, (await final.WorkItems.FindAsync(archived))!.Version);
+        Assert.Equal(1, (await final.WorkItems.FindAsync(retired))!.Version);
+        Assert.False(await final.ProjectMembers.AnyAsync(member => member.ProjectId == projectId && member.UserId == "member"));
         Assert.Single(await final.ChangeEvents.Where(change => change.Action == "AssigneeCleared").ToListAsync());
     }
 
@@ -340,37 +343,6 @@ public class WorkItemCommandTests
         Assert.True(await read.ProjectMembers.AnyAsync(member => member.ProjectId == projectId && member.UserId == "member"));
         Assert.Equal(version, (await read.Projects.SingleAsync()).Version);
         Assert.False(await read.ChangeEvents.AnyAsync(change => change.Action == "AssigneeCleared" || change.Action == "MemberRemoved"));
-    }
-
-    [Fact]
-    public async Task OwnerArchivesChildrenExplicitlyAndRestorationChecksCurrentAncestors()
-    {
-        // Arrange
-        await using var database = new ProjectTestDatabase();
-        var projectId = await PrepareAsync(database);
-        var parentId = (await CreateAsync(database, projectId)).Value;
-        var childId = (await CreateAsync(database, projectId, WorkItemType.Subtask, parentId: parentId)).Value;
-
-        // Act
-        var denied = await RunAsync(database, session => session.ArchiveWork.Handle(new(projectId, childId, 1, true), default), "member");
-        var hasChild = await RunAsync(database, session => session.ArchiveWork.Handle(new(projectId, parentId, 1, true), default));
-        var childArchive = await RunAsync(database, session => session.ArchiveWork.Handle(new(projectId, childId, 1, true), default));
-        var parentArchive = await RunAsync(database, session => session.ArchiveWork.Handle(new(projectId, parentId, 1, true), default));
-        var cannotRestore = await RunAsync(database, session => session.ArchiveWork.Handle(new(projectId, childId, 2, false), default));
-        await RunAsync(database, session => session.ArchiveWork.Handle(new(projectId, parentId, 2, false), default));
-        await SetStatusAsync(database, parentId, WorkItemStatus.Done);
-        var doneParent = await RunAsync(database, session => session.ArchiveWork.Handle(new(projectId, childId, 2, false), default));
-
-        // Assert
-        Assert.Equal(OperationStatus.NotFound, denied.Status);
-        Assert.Equal(OperationStatus.Invalid, hasChild.Status);
-        Assert.Equal(OperationStatus.Success, childArchive.Status);
-        Assert.Equal(OperationStatus.Success, parentArchive.Status);
-        Assert.Equal(OperationStatus.Invalid, cannotRestore.Status);
-        Assert.Equal(OperationStatus.Invalid, doneParent.Status);
-        await using var read = database.OpenContext();
-        Assert.True((await read.WorkItems.FindAsync(childId))!.IsArchived);
-        Assert.Equal(2, (await read.WorkItems.FindAsync(childId))!.Version);
     }
 
     [Fact]
@@ -454,7 +426,6 @@ internal class WorkItemSession(ApplicationDbContext context, TestUser user) : Pr
     public RenameLabelHandler RenameLabel => new(Labels, Repository, Access, Unit, User, TimeProvider.System);
     public DeleteLabelHandler DeleteLabel => new(Labels, Repository, Access, Unit, User, TimeProvider.System);
     public ChangeWorkItemHierarchyHandler Hierarchy => new(Works, Repository, Access, Unit, Validation, User, TimeProvider.System);
-    public SetWorkItemArchiveHandler ArchiveWork => new(Works, Repository, Access, Unit, Validation, User, TimeProvider.System);
     public AddWorkItemLinkHandler AddLink => new(Works, Repository, Access, Unit, User, TimeProvider.System);
     public RemoveWorkItemLinkHandler RemoveLink => new(Works, Repository, Access, Unit, User, TimeProvider.System);
 }

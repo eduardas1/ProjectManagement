@@ -3,7 +3,7 @@ using ProjectManagement.Application.Interfaces;
 
 namespace ProjectManagement.Application.Projects;
 
-public record ListProjectsQuery(bool Archived) : IRequest<IReadOnlyList<ProjectSummary>>;
+public record ListProjectsQuery() : IRequest<IReadOnlyList<ProjectSummary>>;
 public record GetProjectQuery(int ProjectId) : IRequest<ProjectDetails?>;
 public record GetProjectMembersQuery(int ProjectId) : IRequest<ProjectMembers?>;
 
@@ -11,7 +11,7 @@ public class ListProjectsHandler(IProjectRepository repository, ICurrentUser cur
     : IRequestHandler<ListProjectsQuery, IReadOnlyList<ProjectSummary>>
 {
     public Task<IReadOnlyList<ProjectSummary>> Handle(ListProjectsQuery request, CancellationToken cancellationToken)
-        => repository.ListAccessibleAsync(currentUser.UserId, request.Archived, cancellationToken);
+        => repository.ListAccessibleAsync(currentUser.UserId, cancellationToken);
 }
 
 public class GetProjectHandler(IProjectRepository repository, ICurrentUser currentUser)

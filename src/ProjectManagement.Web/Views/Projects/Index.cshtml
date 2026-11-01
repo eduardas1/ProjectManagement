@@ -1,17 +1,10 @@
 @model IReadOnlyList<ProjectManagement.Application.Projects.ProjectSummary>
-@{
-    var archived = (bool?)ViewData["Archived"] ?? false;
-    ViewData["Title"] = archived ? "Archived projects" : "Projects";
-}
-
-<h1>@ViewData["Title"]</h1>
-<p class="action-links">
-    <a asp-action="Create" class="btn btn-primary">Create project</a>
-    <a asp-action="Index" asp-route-archived="@(!archived)">@(archived ? "Active projects" : "Archived projects")</a>
-</p>
+@{ ViewData["Title"] = "Projects"; }
+<h1>Projects</h1>
+<p class="action-links"><a asp-action="Create" class="btn btn-primary">Create project</a></p>
 @if (Model.Count == 0)
 {
-    <p>No @(archived ? "archived" : "active") projects.</p>
+    <p>No projects.</p>
 }
 else
 {

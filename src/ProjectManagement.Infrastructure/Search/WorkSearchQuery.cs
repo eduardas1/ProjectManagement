@@ -15,7 +15,7 @@ internal class WorkSearchQuery(ApplicationDbContext context, ICurrentUser curren
     ISearchDefinitionValidator validator, WorkItemSearchMapper mapper)
 {
     public Task<WorkProject?> GetProjectAsync(int projectId, CancellationToken cancellationToken)
-        => context.Projects.AsNoTracking().Where(project => project.Id == projectId
+        => context.Projects.AsNoTracking().Where(project => project.Id == projectId && !project.IsArchived
             && context.ProjectMembers.Any(member => member.ProjectId == project.Id && member.UserId == currentUser.UserId))
             .Select(project => new WorkProject(project.Id, project.Key, project.Name, project.IsArchived, project.OwnerId == currentUser.UserId))
             .SingleOrDefaultAsync(cancellationToken);
@@ -36,7 +36,7 @@ internal class WorkSearchQuery(ApplicationDbContext context, ICurrentUser curren
         ordering = ordering.Length == 0 ? "number" : string.Join(",", ordering.Split(',').Select(part => string.Join(" ", part.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))));
         var query = context.WorkItems.AsNoTracking().Where(work => work.ProjectId == projectId
             && context.ProjectMembers.Any(member => member.ProjectId == work.ProjectId && member.UserId == currentUser.UserId)
-            && work.IsArchived == input.Archived).ApplyFiltering(expression, mapper);
+            && !work.IsArchived).ApplyFiltering(expression, mapper);
         return OperationResult<WorkSearchSelection>.Success(new WorkSearchSelection(project, expression, ordering, query));
     }
 }

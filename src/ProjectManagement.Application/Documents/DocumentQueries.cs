@@ -5,7 +5,7 @@ using ProjectManagement.Application.WorkItems;
 namespace ProjectManagement.Application.Documents;
 
 public record GetDocumentProjectQuery(int ProjectId) : IRequest<WorkProject?>;
-public record ListDocumentsQuery(int ProjectId, bool Archived = false, int Page = 1) : IRequest<ProjectDocuments?>;
+public record ListDocumentsQuery(int ProjectId, int Page = 1) : IRequest<ProjectDocuments?>;
 public record GetDocumentQuery(int ProjectId, int DocumentId) : IRequest<DocumentDetails?>;
 public record ListRevisionsQuery(int ProjectId, int DocumentId, int Page = 1) : IRequest<DocumentRevisions?>;
 public record GetRevisionQuery(int ProjectId, int DocumentId, int RevisionId) : IRequest<DocumentRevisionDetails?>;
@@ -19,7 +19,7 @@ public class GetDocumentProjectHandler(ICollaborationReadRepository repository) 
 public class ListDocumentsHandler(ICollaborationReadRepository repository) : IRequestHandler<ListDocumentsQuery, ProjectDocuments?>
 {
     public Task<ProjectDocuments?> Handle(ListDocumentsQuery request, CancellationToken cancellationToken)
-        => repository.ListDocumentsAsync(request.ProjectId, request.Archived, request.Page, cancellationToken);
+        => repository.ListDocumentsAsync(request.ProjectId, request.Page, cancellationToken);
 }
 
 public class GetDocumentHandler(ICollaborationReadRepository repository) : IRequestHandler<GetDocumentQuery, DocumentDetails?>

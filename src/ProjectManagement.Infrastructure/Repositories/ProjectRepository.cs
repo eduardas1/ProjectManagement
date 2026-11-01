@@ -11,10 +11,10 @@ public class ProjectRepository(ApplicationDbContext context) : IProjectRepositor
 {
     private readonly IQueryable<PersonSummary> people = PersonQueries.Select(context);
 
-    public async Task<IReadOnlyList<ProjectSummary>> ListAccessibleAsync(string userId, bool archived, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<ProjectSummary>> ListAccessibleAsync(string userId, CancellationToken cancellationToken)
     {
         return await context.Projects.AsNoTracking()
-            .Where(project => project.IsArchived == archived && context.ProjectMembers.Any(member => member.ProjectId == project.Id && member.UserId == userId))
+            .Where(project => !project.IsArchived && context.ProjectMembers.Any(member => member.ProjectId == project.Id && member.UserId == userId))
             .OrderBy(project => project.Key)
             .Select(project => new ProjectSummary(project.Id, project.Key, project.Name, project.IsArchived, project.OwnerId == userId))
             .ToListAsync(cancellationToken);
@@ -23,7 +23,7 @@ public class ProjectRepository(ApplicationDbContext context) : IProjectRepositor
     public Task<ProjectDetails?> GetDetailsAsync(int projectId, string userId, CancellationToken cancellationToken)
     {
         return context.Projects.AsNoTracking()
-            .Where(project => project.Id == projectId && context.ProjectMembers.Any(member => member.ProjectId == project.Id && member.UserId == userId))
+            .Where(project => project.Id == projectId && !project.IsArchived && context.ProjectMembers.Any(member => member.ProjectId == project.Id && member.UserId == userId))
             .Select(project => new ProjectDetails(project.Id, project.Key, project.Name, project.Description,
                 new PersonSummary(project.OwnerId,
                 people.Where(user => user.Id == project.OwnerId).Select(user => user.FirstName).Single(),
@@ -43,7 +43,7 @@ public class ProjectRepository(ApplicationDbContext context) : IProjectRepositor
     public Task<ProjectMembers?> GetMembersAsync(int projectId, string ownerId, CancellationToken cancellationToken)
     {
         return context.Projects.AsNoTracking()
-            .Where(project => project.Id == projectId && project.OwnerId == ownerId
+            .Where(project => project.Id == projectId && !project.IsArchived && project.OwnerId == ownerId
                 && context.ProjectMembers.Any(member => member.ProjectId == project.Id && member.UserId == ownerId))
             .Select(project => new ProjectMembers(project.Id, project.Key, project.Name, project.IsArchived, project.Version,
                 context.ProjectMembers.Where(member => member.ProjectId == project.Id)

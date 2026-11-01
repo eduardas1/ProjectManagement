@@ -1,5 +1,0 @@
-@model WorkItemArchiveViewModel
-@{ ViewData["Title"] = Model.IsArchived ? "Archive work item" : "Restore work item"; ViewData["WorkProject"] = Model.Details.Project; }
-<h1>@ViewData["Title"]</h1>
-<partial name="_Archive" model="Model" />
-@section Scripts { <partial name="_ValidationScriptsPartial" /> }

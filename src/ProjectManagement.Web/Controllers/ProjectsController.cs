@@ -10,10 +10,9 @@ namespace ProjectManagement.Web.Controllers;
 public class ProjectsController(ISender sender) : Controller
 {
     [HttpGet]
-    public async Task<IActionResult> Index(bool archived = false, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Index(CancellationToken cancellationToken = default)
     {
-        ViewData["Archived"] = archived;
-        return View(await sender.Send(new ListProjectsQuery(archived), cancellationToken));
+        return View(await sender.Send(new ListProjectsQuery(), cancellationToken));
     }
 
     [HttpGet]
@@ -84,52 +83,10 @@ public class ProjectsController(ISender sender) : Controller
         return View(model);
     }
 
-    [HttpGet]
-    public async Task<IActionResult> Archive(int id, CancellationToken cancellationToken)
-    {
-        var project = await sender.Send(new GetProjectQuery(id), cancellationToken);
-        if (project == null || !project.IsOwner) return NotFound();
-        return ArchiveForm(new ArchiveProjectViewModel
-        {
-            ProjectId = id, ExpectedVersion = project.Version, Name = project.Name,
-            Key = project.Key, IsArchived = !project.IsArchived
-        });
-    }
 
-    [HttpPost]
-    public async Task<IActionResult> Archive(int id, ArchiveProjectViewModel model, CancellationToken cancellationToken)
-    {
-        if (id != model.ProjectId) return NotFound();
-        var project = await sender.Send(new GetProjectQuery(id), cancellationToken);
-        if (project == null || !project.IsOwner) return NotFound();
-        model.Name = project.Name;
-        model.Key = project.Key;
-        ModelState.Remove(nameof(model.Name));
-        ModelState.Remove(nameof(model.Key));
-        if (ModelState.IsValid)
-        {
-            var result = await sender.Send(new SetProjectArchiveCommand(id, model.ExpectedVersion, model.IsArchived), cancellationToken);
-            if (result.Status == OperationStatus.NotFound) return NotFound();
-            if (result.Status == OperationStatus.Success)
-            {
-                if (IsAjax) return Json(new { saved = true, redirectUrl = Url.Action(nameof(Details), new { id }) });
-                TempData["Success"] = model.IsArchived ? "Project archived." : "Project restored.";
-                return RedirectToAction(nameof(Details), new { id });
-            }
-            ApplyError(result);
-        }
-        else Response.StatusCode = StatusCodes.Status400BadRequest;
-        return ArchiveForm(model);
-    }
 
     private bool IsAjax => Request.Headers["X-Requested-With"] == "XMLHttpRequest";
 
-    private IActionResult ArchiveForm(ArchiveProjectViewModel model)
-    {
-        if (!IsAjax) return View("Archive", model);
-        Response.Headers["X-Workboard-Partial"] = "modal";
-        return PartialView("_Archive", model);
-    }
 
     private void ApplyError(OperationResult<int> result)
     {

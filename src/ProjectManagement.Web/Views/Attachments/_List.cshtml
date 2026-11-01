@@ -1,9 +1,7 @@
 @model ProjectManagement.Application.Attachments.TargetAttachments
-@if (Model.Target.Project.IsArchived || Model.Target.IsArchived)
-{ <div class="alert alert-info">This @(Model.Target.Project.IsArchived ? "project" : "item") is archived.</div> }
+
 <p>
-@if (!Model.Target.Project.IsArchived && !Model.Target.IsArchived)
-{ <a data-modal-form data-modal-title="Upload file" asp-action="Upload" asp-route-projectId="@Model.Target.Project.Id" asp-route-workItemId="@Model.Target.WorkItemId" asp-route-documentId="@Model.Target.DocumentId" class="btn btn-primary">Upload file</a> }
+ <a data-modal-form data-modal-title="Upload file" asp-action="Upload" asp-route-projectId="@Model.Target.Project.Id" asp-route-workItemId="@Model.Target.WorkItemId" asp-route-documentId="@Model.Target.DocumentId" class="btn btn-primary">Upload file</a>
 </p>
 @if (Model.Total == 0) { <p>No attachments.</p> }
 else
@@ -14,8 +12,7 @@ else
         <tbody>@foreach (var file in Model.Items)
         {
             <tr><td class="project-text attachment-name"><a asp-action="Download" asp-route-projectId="@Model.Target.Project.Id" asp-route-id="@file.Id">@file.DisplayName</a></td><td>@file.Length</td><td>@file.UploadedAtUtc.ToString("yyyy-MM-dd HH:mm")</td><td class="project-text"><partial name="_Person" model="file.UploadedBy" /></td><td>
-            @if (file.CanRemove && !Model.Target.Project.IsArchived && !Model.Target.IsArchived)
-            { <a data-modal-form data-modal-title="Remove file" asp-action="Remove" asp-route-projectId="@Model.Target.Project.Id" asp-route-id="@file.Id">Remove</a> }
+            @if (file.CanRemove) { <a data-modal-form data-modal-title="Remove file" asp-action="Remove" asp-route-projectId="@Model.Target.Project.Id" asp-route-id="@file.Id">Remove</a> }
             </td></tr>
         }</tbody>
     </table></div>

@@ -19,9 +19,7 @@
         </select><span asp-validation-for="Status" class="text-danger"></span>
     </div>
     <div class="form-actions">
-        @if (!Model.Details.Project.IsArchived && !Model.Details.Item.IsArchived)
-        { <button type="submit" class="btn btn-primary">Save status</button> }
-        else { <p>This @(Model.Details.Project.IsArchived ? "project" : "work item") is archived.</p> }
+         <button type="submit" class="btn btn-primary">Save status</button>
         <a href="@returnUrl" class="btn btn-default" data-modal-cancel>Cancel</a>
         <a asp-action="Status" asp-route-projectId="@Model.ProjectId" asp-route-id="@Model.WorkItemId" asp-route-returnUrl="@returnUrl" data-modal-reload>Reload current version</a>
     </div>

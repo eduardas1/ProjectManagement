@@ -16,7 +16,8 @@ public class CollaborationReadRepository(ApplicationDbContext context, ICurrentU
     private readonly IQueryable<PersonSummary> people = PersonQueries.Select(context);
 
     public Task<CommentWork?> GetCommentWorkAsync(int projectId, int workItemId, CancellationToken cancellationToken)
-        => context.WorkItems.AsNoTracking().Where(work => work.ProjectId == projectId && work.Id == workItemId
+        => context.WorkItems.AsNoTracking().Where(work => work.ProjectId == projectId && !work.IsArchived && work.Id == workItemId
+                && context.Projects.Any(project => project.Id == projectId && !project.IsArchived)
                 && context.ProjectMembers.Any(member => member.ProjectId == projectId && member.UserId == currentUser.UserId))
             .Join(context.Projects, work => work.ProjectId, project => project.Id, (work, project) => new CommentWork(
                 new WorkProject(project.Id, project.Key, project.Name, project.IsArchived, project.OwnerId == currentUser.UserId),
@@ -65,13 +66,14 @@ public class CollaborationReadRepository(ApplicationDbContext context, ICurrentU
     }
 
     public Task<WorkProject?> GetDocumentProjectAsync(int projectId, CancellationToken cancellationToken)
-        => context.Projects.AsNoTracking().Where(project => project.Id == projectId
+        => context.Projects.AsNoTracking().Where(project => project.Id == projectId && !project.IsArchived
             && context.ProjectMembers.Any(member => member.ProjectId == projectId && member.UserId == currentUser.UserId))
             .Select(project => new WorkProject(project.Id, project.Key, project.Name, project.IsArchived,
                 project.OwnerId == currentUser.UserId)).SingleOrDefaultAsync(cancellationToken);
 
     private IQueryable<ProjectDocument> DocumentQuery(int projectId)
-        => context.ProjectDocuments.AsNoTracking().Where(document => document.ProjectId == projectId
+        => context.ProjectDocuments.AsNoTracking().Where(document => document.ProjectId == projectId && !document.IsArchived
+            && context.Projects.Any(project => project.Id == projectId && !project.IsArchived)
             && context.ProjectMembers.Any(member => member.ProjectId == projectId && member.UserId == currentUser.UserId));
 
     private IQueryable<DocumentInfo> SelectDocumentInfo(IQueryable<ProjectDocument> query)
@@ -99,17 +101,17 @@ public class CollaborationReadRepository(ApplicationDbContext context, ICurrentU
                 people.Where(user => user.Id == revision.EditorId).Select(user => user.Email).Single()),
             revision.SavedAtUtc));
 
-    public async Task<ProjectDocuments?> ListDocumentsAsync(int projectId, bool archived, int page, CancellationToken cancellationToken)
+    public async Task<ProjectDocuments?> ListDocumentsAsync(int projectId, int page, CancellationToken cancellationToken)
     {
         var project = await GetDocumentProjectAsync(projectId, cancellationToken);
         if (project == null) return null;
-        var query = DocumentQuery(projectId).Where(document => document.IsArchived == archived);
+        var query = DocumentQuery(projectId);
         var total = await query.CountAsync(cancellationToken);
         var pages = Math.Max(1, (total + 19) / 20);
         page = Math.Clamp(page, 1, pages);
         var items = await SelectDocumentInfo(query.OrderBy(document => document.Title).ThenBy(document => document.Id)
             .Skip((page - 1) * 20).Take(20)).ToListAsync(cancellationToken);
-        return new ProjectDocuments(project, archived, page, pages, total, items);
+        return new ProjectDocuments(project, page, pages, total, items);
     }
 
     public async Task<DocumentDetails?> GetDocumentAsync(int projectId, int documentId, CancellationToken cancellationToken)
@@ -170,7 +172,7 @@ public class CollaborationReadRepository(ApplicationDbContext context, ICurrentU
         if (project == null) return null;
         if (workItemId.HasValue)
         {
-            var work = await context.WorkItems.AsNoTracking().Where(work => work.ProjectId == projectId && work.Id == workItemId.Value
+            var work = await context.WorkItems.AsNoTracking().Where(work => work.ProjectId == projectId && !work.IsArchived && work.Id == workItemId.Value
                     && context.ProjectMembers.Any(member => member.ProjectId == projectId && member.UserId == currentUser.UserId))
                 .Select(work => new { work.Id, work.Number, work.Title, work.IsArchived }).SingleOrDefaultAsync(cancellationToken);
             return work == null ? null : new AttachmentTarget(project, work.Id, null, project.Key + "-" + work.Number + " " + work.Title, work.IsArchived);
@@ -182,9 +184,10 @@ public class CollaborationReadRepository(ApplicationDbContext context, ICurrentU
 
     private IQueryable<Attachment> AttachmentQuery(int projectId)
         => context.Attachments.AsNoTracking().Where(attachment => attachment.ProjectId == projectId
+            && context.Projects.Any(project => project.Id == projectId && !project.IsArchived)
             && context.ProjectMembers.Any(member => member.ProjectId == projectId && member.UserId == currentUser.UserId)
-            && ((attachment.WorkItemId != null && context.WorkItems.Any(work => work.ProjectId == projectId && work.Id == attachment.WorkItemId))
-                || (attachment.DocumentId != null && context.ProjectDocuments.Any(document => document.ProjectId == projectId && document.Id == attachment.DocumentId))));
+            && ((attachment.WorkItemId != null && context.WorkItems.Any(work => work.ProjectId == projectId && !work.IsArchived && work.Id == attachment.WorkItemId))
+                || (attachment.DocumentId != null && context.ProjectDocuments.Any(document => document.ProjectId == projectId && !document.IsArchived && document.Id == attachment.DocumentId))));
 
     private IQueryable<AttachmentInfo> SelectAttachmentInfo(IQueryable<Attachment> query)
         => query.Select(attachment => new AttachmentInfo(attachment.Id, attachment.Version, attachment.DisplayName,

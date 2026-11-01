@@ -12,7 +12,6 @@ public static class WorkSearchRoutes
             ["projectId"] = projectId.ToString(CultureInfo.InvariantCulture),
             ["Input.Page"] = page.ToString(CultureInfo.InvariantCulture),
             ["Input.PageSize"] = input.PageSize.ToString(CultureInfo.InvariantCulture),
-            ["Input.Archived"] = input.Archived.ToString().ToLowerInvariant(),
             ["Input.UnassignedOnly"] = input.UnassignedOnly.ToString().ToLowerInvariant()
         };
         void Add(string key, string? value) { if (!string.IsNullOrEmpty(value)) routes["Input." + key] = value; }

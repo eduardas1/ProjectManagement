@@ -10,10 +10,10 @@ namespace ProjectManagement.Web.Controllers;
 public class WorkItemsController(ISender sender) : Controller
 {
     [HttpGet]
-    public async Task<IActionResult> Index([FromQuery] int projectId, bool archived = false, int page = 1, WorkItemStatus? status = null, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Index([FromQuery] int projectId, int page = 1, WorkItemStatus? status = null, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid || (status.HasValue && !Enum.IsDefined(status.Value))) return BadRequest("Select a valid work status.");
-        var list = await sender.Send(new ListWorkItemsQuery(projectId, archived, page, status), cancellationToken);
+        var list = await sender.Send(new ListWorkItemsQuery(projectId, page, status), cancellationToken);
         return list == null ? NotFound() : View(list);
     }
 
@@ -21,7 +21,7 @@ public class WorkItemsController(ISender sender) : Controller
     public async Task<IActionResult> Backlog([FromQuery] int projectId, int page = 1, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return BadRequest("Invalid work list request.");
-        var list = await sender.Send(new ListWorkItemsQuery(projectId, false, page, WorkItemStatus.Backlog), cancellationToken);
+        var list = await sender.Send(new ListWorkItemsQuery(projectId, page, WorkItemStatus.Backlog), cancellationToken);
         return list == null ? NotFound() : View("Index", list);
     }
 
@@ -29,7 +29,7 @@ public class WorkItemsController(ISender sender) : Controller
     public async Task<IActionResult> Cancelled([FromQuery] int projectId, int page = 1, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid) return BadRequest("Invalid work list request.");
-        var list = await sender.Send(new ListWorkItemsQuery(projectId, false, page, WorkItemStatus.Cancelled), cancellationToken);
+        var list = await sender.Send(new ListWorkItemsQuery(projectId, page, WorkItemStatus.Cancelled), cancellationToken);
         return list == null ? NotFound() : View("Index", list);
     }
 
@@ -273,36 +273,7 @@ public class WorkItemsController(ISender sender) : Controller
         return WorkForm("RemoveLink", model);
     }
 
-    [HttpGet]
-    public async Task<IActionResult> Archive([FromQuery] int projectId, [FromRoute] int id, CancellationToken cancellationToken)
-    {
-        var details = await sender.Send(new GetWorkItemQuery(projectId, id), cancellationToken);
-        if (details == null || !details.Project.IsOwner) return NotFound();
-        if (details.Project.IsArchived) return RedirectToAction(nameof(Details), new { projectId, id });
-        return WorkForm("Archive", new WorkItemArchiveViewModel { ProjectId = projectId, WorkItemId = id, ExpectedVersion = details.Item.Version,
-            IsArchived = !details.Item.IsArchived, Details = details });
-    }
 
-    [HttpPost]
-    public async Task<IActionResult> Archive([FromQuery] int projectId, [FromRoute] int id, WorkItemArchiveViewModel model, CancellationToken cancellationToken)
-    {
-        if (projectId != model.ProjectId || id != model.WorkItemId) return NotFound();
-        var details = await sender.Send(new GetWorkItemQuery(projectId, id), cancellationToken);
-        if (details == null || !details.Project.IsOwner) return NotFound();
-        model.Details = details;
-        if (ModelState.IsValid)
-        {
-            var result = await sender.Send(new SetWorkItemArchiveCommand(projectId, id, model.ExpectedVersion, model.IsArchived), cancellationToken);
-            if (result.Status == OperationStatus.NotFound) return NotFound();
-            if (result.Status == OperationStatus.Success)
-            {
-                return WorkSaved(projectId, id, model.IsArchived ? "Work item archived." : "Work item restored.");
-            }
-            ApplyError(result);
-        }
-        else Response.StatusCode = StatusCodes.Status400BadRequest;
-        return WorkForm("Archive", model);
-    }
 
     private bool IsAjax => Request.Headers["X-Requested-With"] == "XMLHttpRequest";
 

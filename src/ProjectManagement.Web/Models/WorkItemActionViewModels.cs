@@ -36,10 +36,6 @@ public class WorkItemLinkViewModel : WorkItemActionViewModel
     public string TargetName { get; set; } = "";
 }
 
-public class WorkItemArchiveViewModel : WorkItemActionViewModel
-{
-    public bool IsArchived { get; set; }
-}
 
 public class WorkItemStatusViewModel : WorkItemActionViewModel
 {

@@ -1,4 +1,0 @@
-@model ArchiveDocumentViewModel
-@{ ViewData["WorkProject"] = Model.Details.Project; ViewData["Title"] = Model.IsArchived == true ? "Archive document" : "Restore document"; }
-<h1>@ViewData["Title"]</h1>
-<partial name="_Archive" model="Model" />

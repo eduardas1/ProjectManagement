@@ -2,23 +2,18 @@
 <template data-project-navigation data-project-id="@Model.Id"><partial name="~/Views/WorkItems/_WorkNavigation.cshtml" model="@(new ProjectManagement.Application.WorkItems.WorkProject(Model.Id, Model.Key, Model.Name, Model.IsArchived, Model.IsOwner))" /></template>
 <template data-project-context data-project-id="@Model.Id"><partial name="_ProjectContext" model="@(new ProjectManagement.Application.WorkItems.WorkProject(Model.Id, Model.Key, Model.Name, Model.IsArchived, Model.IsOwner))" /></template>
 <h1>Overview</h1>
-@if (Model.IsArchived)
-{
-    <div class="alert alert-info">This project is archived.</div>
-}
+
 <p class="project-text">Owner: <partial name="_Person" model="Model.Owner" /></p>
 <p class="action-links">
-    <a asp-action="Index" asp-route-archived="@Model.IsArchived">Back to projects</a>
+    <a asp-action="Index">Back to projects</a>
     <a asp-controller="WorkItems" asp-action="Index" asp-route-projectId="@Model.Id" class="btn btn-default">Work items</a>
     <a asp-controller="Documents" asp-action="Index" asp-route-projectId="@Model.Id" class="btn btn-default">Documents</a>
     @if (Model.IsOwner)
     {
         <a asp-controller="Members" asp-action="Index" asp-route-id="@Model.Id" class="btn btn-default">Members</a>
-        @if (!Model.IsArchived)
-        {
+
             <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-default">Edit project</a>
-        }
-        <a data-modal-form data-modal-title="Archive or restore project" asp-action="Archive" asp-route-id="@Model.Id" class="btn btn-default">@(Model.IsArchived ? "Restore project" : "Archive project")</a>
+
     }
 </p>
 <h2>Description</h2>
@@ -42,4 +37,3 @@ else
         </tbody>
     </table>
 </div>
-

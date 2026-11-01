@@ -118,7 +118,7 @@ public class WorkItemWorkflowTests
     }
 
     [Fact]
-    public async Task CurrentScopeAndArchiveRulesAreCheckedBeforeStateMutation()
+    public async Task CurrentScopeRevocationAndLegacyWorkAreCheckedBeforeStatusMutation()
     {
         // Arrange
         await using var database = new ProjectTestDatabase();
@@ -133,22 +133,21 @@ public class WorkItemWorkflowTests
         var outsider = await ChangeAsync(database, projectId, id, WorkItemStatus.Todo, "other");
         await using (var member = new WorkItemSession(database.OpenContext(), new TestUser("member")))
             Assert.Equal(OperationStatus.NotFound, (await member.ChangeStatus.Handle(new(projectId, foreignWork, 1, WorkItemStatus.Todo), default)).Status);
-        await using (var owner = new WorkItemSession(database.OpenContext(), new TestUser("owner")))
-            await owner.ArchiveWork.Handle(new(projectId, id, 1, true), default);
-        var archivedWork = await ChangeAsync(database, projectId, id, WorkItemStatus.Todo);
-        await using (var owner = new WorkItemSession(database.OpenContext(), new TestUser("owner")))
-            await owner.ArchiveWork.Handle(new(projectId, id, 2, false), default);
-        await using (var owner = database.Open()) await owner.Archive.Handle(new(projectId, 3, true), default);
-        var archivedProject = await ChangeAsync(database, projectId, id, WorkItemStatus.Todo);
-        await using (var owner = database.Open()) await owner.RemoveMember.Handle(new(projectId, 4, "member"), default);
+        await using (var owner = database.Open())
+            Assert.Equal(OperationStatus.Success, (await owner.RemoveMember.Handle(new(projectId, 3, "member"), default)).Status);
         var revoked = await ChangeAsync(database, projectId, id, WorkItemStatus.Todo);
+        await using (var fixture = database.OpenContext())
+        {
+            (await fixture.WorkItems.SingleAsync(item => item.Id == id)).IsArchived = true;
+            await fixture.SaveChangesAsync();
+        }
+        var unavailable = await ChangeAsync(database, projectId, id, WorkItemStatus.Todo, "owner");
         await using var read = database.OpenContext();
 
         // Assert
         Assert.Equal(OperationStatus.NotFound, outsider.Status);
-        Assert.Equal(OperationStatus.Invalid, archivedWork.Status);
-        Assert.Equal(OperationStatus.Invalid, archivedProject.Status);
         Assert.Equal(OperationStatus.NotFound, revoked.Status);
+        Assert.Equal(OperationStatus.NotFound, unavailable.Status);
         Assert.All(await read.WorkItems.ToListAsync(), work => Assert.Equal(WorkItemStatus.Backlog, work.Status));
         Assert.False(await read.ChangeEvents.AnyAsync(change => change.Action == "StatusChanged"));
     }

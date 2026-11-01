@@ -2,8 +2,7 @@
 @model ProjectManagement.Application.WorkItems.WorkItemDetails
 <div class="status-control">
     <span class="label status-badge status-@Model.Item.Status.ToString().ToLowerInvariant()">@Model.Item.Status</span>
-    @if (!Model.Project.IsArchived && !Model.Item.IsArchived)
-    {
+
         <form data-inline-status asp-controller="WorkItems" asp-action="Status" asp-route-projectId="@Model.Project.Id" asp-route-id="@Model.Item.Id" method="post">
             <input type="hidden" name="ProjectId" value="@Model.Project.Id" /><input type="hidden" name="WorkItemId" value="@Model.Item.Id" /><input type="hidden" name="ExpectedVersion" value="@Model.Item.Version" />
             <label class="sr-only" for="status-@Model.Item.Id">Change status</label>
@@ -15,5 +14,5 @@
             <button type="submit" class="btn btn-default" data-status-save>Save status</button>
             <span data-status-notice role="status"></span>
         </form>
-    }
+
 </div>

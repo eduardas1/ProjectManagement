@@ -106,7 +106,6 @@ public class WorkSearchRepositoryTests
             pages.AddRange(result.Value!.Items.Select(work => work.Id));
         }
         var last = await search.SearchAsync(ids.Project, new WorkSearchInput { Page = 999, PageSize = 5 }, default);
-        var archived = await search.SearchAsync(ids.Project, new WorkSearchInput { Archived = true }, default);
         var missing = await search.SearchAsync(ids.Project, new WorkSearchInput { Expression = "assignee=,deadline=" }, default);
         var key = await search.SearchAsync(ids.Project, new WorkSearchInput { Text = "one-0001" }, default);
         var otherKey = await search.SearchAsync(ids.Project, new WorkSearchInput { Text = "TWO-1" }, default);
@@ -115,14 +114,14 @@ public class WorkSearchRepositoryTests
         Assert.Equal(expected, pages);
         Assert.Equal(expected.Length, pages.Distinct().Count());
         Assert.Equal(last.Value!.PageCount, last.Value.Page);
-        Assert.Equal(new[] { ids.Archived }, archived.Value!.Items.Select(work => work.Id));
+        Assert.DoesNotContain(ids.Archived, pages);
         Assert.Equal(25, missing.Value!.Total);
         Assert.Equal(new[] { ids.First }, key.Value!.Items.Select(work => work.Id));
         Assert.Equal(0, otherKey.Value!.Total);
     }
 
     [Fact]
-    public async Task RevocationInvalidatesTheAlreadyUsedRepositoryAndArchivedProjectStaysReadable()
+    public async Task PreviouslyUsedRepositoryRejectsRetiredProjectsAndRevokedMembership()
     {
         // Arrange
         await using var database = new ProjectTestDatabase();
@@ -150,8 +149,8 @@ public class WorkSearchRepositoryTests
 
         // Assert
         Assert.Equal(OperationStatus.Success, before.Status);
-        Assert.Equal(OperationStatus.Success, archivedProject.Status);
-        Assert.True(archivedProject.Value!.Project.IsArchived);
+        Assert.Equal(OperationStatus.NotFound, archivedProject.Status);
+        Assert.Null(archivedProject.Value);
         Assert.Equal(OperationStatus.NotFound, after.Status);
         Assert.Null(options);
     }

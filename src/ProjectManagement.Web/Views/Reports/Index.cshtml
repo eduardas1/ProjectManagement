@@ -2,7 +2,7 @@
 @model ProjectProgressViewModel
 @{ ViewData["Title"] = "Progress"; ViewData["WorkProject"] = Model.Project; }
 <h1>Progress</h1>
-@if (Model.Project.IsArchived) { <div class="alert alert-info">This project is archived. Its progress remains available.</div> }
+
 <div asp-validation-summary="All" class="text-danger" role="alert"></div>
 <p>Filter: <code class="report-expression">@(string.IsNullOrEmpty(Model.Progress?.Expression ?? Model.Input.Expression) ? "All work" : Model.Progress?.Expression ?? Model.Input.Expression)</code></p>
 <p class="action-links"><a data-workspace-link asp-controller="Search" asp-action="Index" asp-all-route-data="Model.SearchRoutes()" class="btn btn-default">Back to search</a>
@@ -17,7 +17,7 @@
         <dt>Completion</dt><dd data-report-key="completion">@(progress.CompletionPercent.HasValue ? progress.CompletionPercent.Value.ToString("F1", CultureInfo.InvariantCulture) + "%" : "Not available")</dd>
         <dt>Overdue</dt><dd data-report-key="overdue">@progress.Overdue</dd>
     </dl>
-    <p>Counts cover unarchived execution work. Epics and parents with unarchived subtasks are excluded.
+    <p>Counts cover execution work. Epics and parents with subtasks are excluded.
         Completion uses @progress.Completed completed out of <span data-report-key="denominator">@progress.CompletionTotal</span> eligible non-cancelled items.
         Overdue work has an unfinished status and a due date before the reporting date.</p>
     @if (progress.EligibleTotal == 0) { <p>No matching execution work.</p> }

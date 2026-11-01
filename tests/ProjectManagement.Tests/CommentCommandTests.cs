@@ -109,7 +109,7 @@ public class CommentCommandTests
     }
 
     [Fact]
-    public async Task InvalidBodyForeignParentArchiveAndRevocationLeaveCommentUntouched()
+    public async Task InvalidBodyForeignScopeRevocationAndLegacyWorkKeepCommentData()
     {
         // Arrange
         await using var database = new ProjectTestDatabase();
@@ -130,32 +130,30 @@ public class CommentCommandTests
         Assert.Equal(OperationStatus.NotFound, (await member.CreateComment.Handle(new(foreignProject, foreignWork, "Secret"), default)).Status);
         Assert.Equal(OperationStatus.NotFound, (await member.CreateComment.Handle(new(project, foreignWork, "Wrong parent"), default)).Status);
         Assert.Equal(OperationStatus.NotFound, (await member.UpdateComment.Handle(new(project, foreignWork, id, 1, "Wrong parent"), default)).Status);
-        await using (var owner = new WorkItemSession(database.OpenContext(), new TestUser("owner"))) await owner.ArchiveWork.Handle(new(project, work, 1, true), default);
-        Assert.True((await repository.ListCommentsAsync(project, work, 1, default))!.Work.IsArchived);
-        await using (var archived = new CommentSession(database.OpenContext(), new TestUser("member")))
-        {
-            Assert.Equal(OperationStatus.Invalid, (await archived.CreateComment.Handle(new(project, work, "Archived"), default)).Status);
-            Assert.Equal(OperationStatus.Invalid, (await archived.UpdateComment.Handle(new(project, work, id, 1, "Archived"), default)).Status);
-            Assert.Equal(OperationStatus.Invalid, (await archived.RemoveComment.Handle(new(project, work, id, 1, null), default)).Status);
-        }
-        await using (var owner = new WorkItemSession(database.OpenContext(), new TestUser("owner"))) await owner.ArchiveWork.Handle(new(project, work, 2, false), default);
-        await using (var owner = database.Open()) await owner.Archive.Handle(new(project, 3, true), default);
-        Assert.True((await repository.ListCommentsAsync(project, work, 1, default))!.Work.Project.IsArchived);
-        await using (var current = new CommentSession(database.OpenContext(), new TestUser("member")))
-            Assert.Equal(OperationStatus.Invalid, (await current.UpdateComment.Handle(new(project, work, id, 1, "Archived project"), default)).Status);
-        await using (var owner = database.Open()) await owner.RemoveMember.Handle(new(project, 4, "member"), default);
+        await using (var owner = database.Open())
+            Assert.Equal(OperationStatus.Success, (await owner.RemoveMember.Handle(new(project, 3, "member"), default)).Status);
         await using (var revoked = new CommentSession(database.OpenContext(), new TestUser("member")))
         {
             Assert.Equal(OperationStatus.NotFound, (await revoked.UpdateComment.Handle(new(project, work, id, 1, "Revoked"), default)).Status);
             Assert.Equal(OperationStatus.NotFound, (await revoked.RemoveComment.Handle(new(project, work, id, 1, null), default)).Status);
             Assert.Equal(OperationStatus.NotFound, (await revoked.CreateComment.Handle(new(project, work, "Revoked"), default)).Status);
         }
+        await using (var fixture = database.OpenContext())
+        {
+            (await fixture.WorkItems.SingleAsync(item => item.Id == work)).IsArchived = true;
+            await fixture.SaveChangesAsync();
+        }
+        var ownerRead = new CollaborationReadRepository(readContext, new TestUser("owner"));
+        await using var current = new CommentSession(database.OpenContext(), new TestUser("owner"));
+        var unavailable = await current.UpdateComment.Handle(new(project, work, id, 1, "Changed"), default);
+        await using var read = database.OpenContext();
+        var comment = await read.Comments.SingleAsync();
 
         // Assert
         Assert.Null(await repository.ListCommentsAsync(project, work, 1, default));
-        Assert.Null(await repository.GetCommentAsync(project, work, id, default));
-        await using var read = database.OpenContext();
-        var comment = await read.Comments.SingleAsync();
+        Assert.Null(await ownerRead.ListCommentsAsync(project, work, 1, default));
+        Assert.Null(await ownerRead.GetCommentAsync(project, work, id, default));
+        Assert.Equal(OperationStatus.NotFound, unavailable.Status);
         Assert.Equal("Retained body", comment.Body);
         Assert.Equal(1, comment.Version);
         Assert.False(comment.IsDeleted);

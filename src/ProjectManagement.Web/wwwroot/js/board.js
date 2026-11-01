@@ -123,7 +123,7 @@
             layoutObserver = new ResizeObserver(scheduleLayout);
             $('.workspace-heading, [data-board-notice], [data-workspace-notice], .project-sidebar, .navbar').each(function () { layoutObserver.observe(this); });
         }
-        if (typeof Sortable === 'undefined' || board.find('[data-board-archived]').attr('data-board-archived') === 'true') return;
+        if (typeof Sortable === 'undefined') return;
         board.find('.kanban-board').attr('data-drag-ready', 'true');
         board.find('.kanban-items').each(function () {
             sortables.push(new Sortable(this, {

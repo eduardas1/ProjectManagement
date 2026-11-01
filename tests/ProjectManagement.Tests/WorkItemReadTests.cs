@@ -39,7 +39,7 @@ public class WorkItemReadTests
         var options = await member.GetOptionsAsync(projectId, default);
         var detail = await member.GetDetailsAsync(projectId, childId, default);
         var parent = await member.GetDetailsAsync(projectId, parentId, default);
-        var list = await member.ListAsync(projectId, false, 1, default);
+        var list = await member.ListAsync(projectId, 1, default);
 
         // Assert
         Assert.NotNull(options);
@@ -56,7 +56,7 @@ public class WorkItemReadTests
         Assert.NotEmpty(detail.History);
         Assert.Equal(3, list!.Total);
         Assert.Null(await member.GetOptionsAsync(foreignProject, default));
-        Assert.Null(await member.ListAsync(foreignProject, false, 1, default));
+        Assert.Null(await member.ListAsync(foreignProject, 1, default));
         Assert.Null(await member.ListLabelsAsync(foreignProject, default));
         Assert.Null(await member.GetDetailsAsync(foreignProject, childId, default));
         Assert.Null(await member.GetDetailsAsync(projectId, int.MaxValue, default));
@@ -88,12 +88,12 @@ public class WorkItemReadTests
         // Assert
         Assert.Null(await repository.GetDetailsAsync(projectId, workId, default));
         Assert.Null(await repository.GetOptionsAsync(projectId, default));
-        Assert.Null(await repository.ListAsync(projectId, false, 1, default));
+        Assert.Null(await repository.ListAsync(projectId, 1, default));
         Assert.Null(await repository.ListLabelsAsync(projectId, default));
     }
 
     [Fact]
-    public async Task ListsPageDeterministicallyAndKeepArchivedWorkExplicit()
+    public async Task ListsPageDeterministicallyWithoutExposingLegacyRetiredWork()
     {
         // Arrange
         await using var database = new ProjectTestDatabase();
@@ -113,22 +113,24 @@ public class WorkItemReadTests
         var repository = new WorkItemReadRepository(read, new TestUser("owner"));
 
         // Act
-        var first = await repository.ListAsync(projectId, false, 0, default);
-        var last = await repository.ListAsync(projectId, false, int.MaxValue, default);
-        var archived = await repository.ListAsync(projectId, true, 1, default);
-        var denied = await new WorkItemReadRepository(read, new TestUser("other")).ListAsync(projectId, true, 1, default);
+        var first = await repository.ListAsync(projectId, 0, default);
+        var last = await repository.ListAsync(projectId, int.MaxValue, default);
+        var retiredId = await read.WorkItems.Where(work => work.Number == 23).Select(work => work.Id).SingleAsync();
+        var retired = await repository.GetDetailsAsync(projectId, retiredId, default);
+        var denied = await new WorkItemReadRepository(read, new TestUser("other")).ListAsync(projectId, 1, default);
 
         // Assert
         Assert.Equal(22, first!.Total);
         Assert.Equal(Enumerable.Range(1, 20), first.Items.Select(item => item.Number));
         Assert.Equal(2, last!.Page);
         Assert.Equal(new[] { 21, 22 }, last.Items.Select(item => item.Number));
-        Assert.Equal(23, Assert.Single(archived!.Items).Number);
+        Assert.Null(retired);
+        Assert.Equal(23, await read.WorkItems.CountAsync());
         Assert.Null(denied);
     }
 
     [Fact]
-    public async Task BoardAndExactListsAgreeOnSavedStatesCountsAndArchiveBounds()
+    public async Task BoardAndExactListsAgreeWithoutExposingRetiredWork()
     {
         // Arrange
         await using var database = new ProjectTestDatabase();
@@ -158,10 +160,11 @@ public class WorkItemReadTests
 
         // Act
         var board = await repository.GetBoardAsync(projectId, default);
-        var todo = await repository.ListAsync(projectId, false, 1, default, WorkItemStatus.Todo);
-        var last = await repository.ListAsync(projectId, false, int.MaxValue, default, WorkItemStatus.Todo);
-        var archived = await repository.ListAsync(projectId, true, 1, default, WorkItemStatus.Todo);
-        var all = await repository.ListAsync(projectId, false, 1, default);
+        var todo = await repository.ListAsync(projectId, 1, default, WorkItemStatus.Todo);
+        var last = await repository.ListAsync(projectId, int.MaxValue, default, WorkItemStatus.Todo);
+        var retiredId = await read.WorkItems.Where(work => work.ProjectId == projectId && work.Number == 28).Select(work => work.Id).SingleAsync();
+        var retired = await repository.GetDetailsAsync(projectId, retiredId, default);
+        var all = await repository.ListAsync(projectId, 1, default);
 
         // Assert
         Assert.NotNull(board);
@@ -176,17 +179,18 @@ public class WorkItemReadTests
         Assert.Equal(WorkItemStatus.Todo, todo.Status);
         Assert.Equal(2, last!.Page);
         Assert.Equal(new[] { 21, 22 }, last.Items.Select(item => item.Number));
-        Assert.Equal(28, Assert.Single(archived!.Items).Number);
+        Assert.Null(retired);
+        Assert.True((await read.WorkItems.FindAsync(retiredId))!.IsArchived);
         Assert.Equal(27, all!.Total);
         Assert.Equal(23, board.Columns.Sum(column => column.Items.Count));
         Assert.Equal(23, board.Columns.SelectMany(column => column.Items).Select(item => item.Id).Distinct().Count());
         Assert.Null(await repository.GetBoardAsync(foreignProject, default));
-        Assert.Null(await repository.ListAsync(foreignProject, false, 1, default, WorkItemStatus.Todo));
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => repository.ListAsync(projectId, false, 1, default, (WorkItemStatus)99));
+        Assert.Null(await repository.ListAsync(foreignProject, 1, default, WorkItemStatus.Todo));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => repository.ListAsync(projectId, 1, default, (WorkItemStatus)99));
     }
 
     [Fact]
-    public async Task BoardReloadFollowsStatusCommandAndCurrentMembershipEvenOnArchivedProjects()
+    public async Task BoardReloadFollowsStatusAndDeniesRevokedOrRetiredProjects()
     {
         // Arrange
         await using var database = new ProjectTestDatabase();
@@ -200,27 +204,32 @@ public class WorkItemReadTests
         await using (var session = new WorkItemSession(database.OpenContext(), new TestUser("owner")))
             workId = (await session.CreateWork.Handle(New(projectId), default)).Value;
         await using var context = database.OpenContext();
-        var repository = new WorkItemReadRepository(context, new TestUser("member"));
-        Assert.All((await repository.GetBoardAsync(projectId, default))!.Columns, column => Assert.Empty(column.Items));
-        Assert.Single((await repository.ListAsync(projectId, false, 1, default, WorkItemStatus.Backlog))!.Items);
+        var member = new WorkItemReadRepository(context, new TestUser("member"));
+        Assert.All((await member.GetBoardAsync(projectId, default))!.Columns, column => Assert.Empty(column.Items));
+        Assert.Single((await member.ListAsync(projectId, 1, default, WorkItemStatus.Backlog))!.Items);
 
         // Act
         await using (var session = new WorkItemSession(database.OpenContext(), new TestUser("member")))
             Assert.Equal(OperationStatus.Success, (await session.ChangeStatus.Handle(new(projectId, workId, 1, WorkItemStatus.Todo), default)).Status);
-        var moved = await repository.GetBoardAsync(projectId, default);
-        await using (var session = database.Open()) await session.Archive.Handle(new(projectId, 3, true), default);
-        var archivedProject = await repository.GetBoardAsync(projectId, default);
-        await using (var session = database.Open()) await session.RemoveMember.Handle(new(projectId, 4, "member"), default);
-        var revoked = await repository.GetBoardAsync(projectId, default);
+        var moved = await member.GetBoardAsync(projectId, default);
+        await using (var owner = database.Open())
+            Assert.Equal(OperationStatus.Success, (await owner.RemoveMember.Handle(new(projectId, 3, "member"), default)).Status);
+        var revoked = await member.GetBoardAsync(projectId, default);
+        await using (var fixture = database.OpenContext())
+        {
+            (await fixture.Projects.SingleAsync()).IsArchived = true;
+            await fixture.SaveChangesAsync();
+        }
+        var retired = await new WorkItemReadRepository(context, new TestUser("owner")).GetBoardAsync(projectId, default);
 
         // Assert
         Assert.Equal(workId, Assert.Single(moved!.Columns[0].Items).Id);
         Assert.All(moved.Columns.Skip(1), column => Assert.Empty(column.Items));
-        Assert.Empty((await new WorkItemReadRepository(context, new TestUser("owner")).ListAsync(projectId, false, 1, default, WorkItemStatus.Backlog))!.Items);
-        Assert.True(archivedProject!.Project.IsArchived);
-        Assert.Single(archivedProject.Columns[0].Items);
         Assert.Null(revoked);
-        Assert.Null(await repository.ListAsync(projectId, false, 1, default, WorkItemStatus.Todo));
+        Assert.Null(retired);
+        Assert.Null(await member.ListAsync(projectId, 1, default, WorkItemStatus.Todo));
+        Assert.Equal(WorkItemStatus.Todo, (await context.WorkItems.SingleAsync()).Status);
+        Assert.True((await context.Projects.SingleAsync()).IsArchived);
     }
 
     private static CreateWorkItemCommand New(int projectId, WorkItemType type = WorkItemType.Task)

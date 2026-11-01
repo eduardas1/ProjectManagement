@@ -67,7 +67,7 @@ public class AttachmentCommandTests
     }
 
     [Fact]
-    public async Task CurrentRolesArchiveAndRevocationControlWritesAndEveryRead()
+    public async Task CurrentRolesRevocationAndLegacyTargetsControlAttachmentAccess()
     {
         // Arrange
         await using var database = new ProjectTestDatabase();
@@ -80,42 +80,41 @@ public class AttachmentCommandTests
             Assert.Equal(OperationStatus.NotFound, (await other.RemoveFile.Handle(new(project, workFile, 1), default)).Status);
         await using (var owner = database.Open()) await owner.Transfer.Handle(new(project, 4, "other"), default);
         await using var readContext = database.OpenContext();
-        var repository = new CollaborationReadRepository(readContext, new TestUser("member"));
+        var memberRead = new CollaborationReadRepository(readContext, new TestUser("member"));
+        var ownerRead = new CollaborationReadRepository(readContext, new TestUser("other"));
 
         // Act
         await using (var former = new AttachmentSession(database.OpenContext(), new TestUser("owner")))
             Assert.Equal(OperationStatus.NotFound, (await former.RemoveFile.Handle(new(project, workFile, 1), default)).Status);
-        await using (var current = new DocumentSession(database.OpenContext(), new TestUser("other")))
-            await current.ArchiveDocument.Handle(new(project, document, 1, true), default);
-        await using (var current = new WorkItemSession(database.OpenContext(), new TestUser("other")))
-            await current.ArchiveWork.Handle(new(project, work, 1, true), default);
-        await using (var member = new AttachmentSession(database.OpenContext(), new TestUser("member")))
-        {
-            Assert.Equal(OperationStatus.Invalid, (await member.Upload.Handle(new(project, work, null, "Note.txt", bytes), default)).Status);
-            Assert.Equal(OperationStatus.Invalid, (await member.Upload.Handle(new(project, null, document, "Note.txt", bytes), default)).Status);
-            Assert.Equal(OperationStatus.Invalid, (await member.RemoveFile.Handle(new(project, workFile, 1), default)).Status);
-            Assert.Equal(OperationStatus.Invalid, (await member.RemoveFile.Handle(new(project, documentFile, 1), default)).Status);
-        }
-        Assert.Equal(bytes, (await repository.DownloadAttachmentAsync(project, workFile, default))!.Contents);
-        Assert.Equal(bytes, (await repository.DownloadAttachmentAsync(project, documentFile, default))!.Contents);
-        Assert.True((await repository.ListAttachmentsAsync(project, null, document, 1, default))!.Target.IsArchived);
-        await using (var current = new ProjectSession(database.OpenContext(), new TestUser("other")))
-        {
-            await current.Archive.Handle(new(project, 5, true), default);
-            await current.RemoveMember.Handle(new(project, 6, "member"), default);
-        }
+        Assert.Equal(bytes, (await ownerRead.DownloadAttachmentAsync(project, workFile, default))!.Contents);
+        Assert.Equal(bytes, (await ownerRead.DownloadAttachmentAsync(project, documentFile, default))!.Contents);
+        await using (var current = database.Open("other"))
+            Assert.Equal(OperationStatus.Success, (await current.RemoveMember.Handle(new(project, 5, "member"), default)).Status);
         await using var revoked = new AttachmentSession(database.OpenContext(), new TestUser("member"));
+        var upload = await revoked.Upload.Handle(new(project, work, null, "Note.txt", bytes), default);
+        var remove = await revoked.RemoveFile.Handle(new(project, workFile, 1), default);
+        await using (var fixture = database.OpenContext())
+        {
+            (await fixture.WorkItems.SingleAsync(item => item.Id == work)).IsArchived = true;
+            (await fixture.ProjectDocuments.SingleAsync(item => item.Id == document)).IsArchived = true;
+            await fixture.SaveChangesAsync();
+        }
+        await using var ownerFiles = new AttachmentSession(database.OpenContext(), new TestUser("other"));
+        var retiredRemove = await ownerFiles.RemoveFile.Handle(new(project, documentFile, 1), default);
+        await using var stored = database.OpenContext();
 
         // Assert
-        Assert.Equal(OperationStatus.NotFound, (await revoked.Upload.Handle(new(project, work, null, "Note.txt", bytes), default)).Status);
-        Assert.Equal(OperationStatus.NotFound, (await revoked.RemoveFile.Handle(new(project, workFile, 1), default)).Status);
-        Assert.Null(await repository.GetAttachmentAsync(project, workFile, default));
-        Assert.Null(await repository.DownloadAttachmentAsync(project, workFile, default));
-        Assert.Null(await repository.DownloadAttachmentAsync(project, documentFile, default));
-        Assert.Null(await repository.ListAttachmentsAsync(project, work, null, 1, default));
-        Assert.Null(await repository.GetAttachmentTargetAsync(project, null, document, default));
-        await using var stored = database.OpenContext();
+        Assert.Equal(OperationStatus.NotFound, upload.Status);
+        Assert.Equal(OperationStatus.NotFound, remove.Status);
+        Assert.Equal(OperationStatus.NotFound, retiredRemove.Status);
+        Assert.Null(await memberRead.GetAttachmentAsync(project, workFile, default));
+        Assert.Null(await memberRead.DownloadAttachmentAsync(project, workFile, default));
+        Assert.Null(await ownerRead.DownloadAttachmentAsync(project, workFile, default));
+        Assert.Null(await ownerRead.DownloadAttachmentAsync(project, documentFile, default));
+        Assert.Null(await ownerRead.ListAttachmentsAsync(project, work, null, 1, default));
+        Assert.Null(await ownerRead.GetAttachmentTargetAsync(project, null, document, default));
         Assert.Equal(2, await stored.Attachments.CountAsync());
+        Assert.All(await stored.Attachments.ToListAsync(), item => Assert.Equal(bytes, item.Contents));
         Assert.Equal(2, await stored.ChangeEvents.CountAsync(change => change.Action.StartsWith("Attachment")));
     }
 

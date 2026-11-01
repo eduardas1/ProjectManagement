@@ -60,7 +60,6 @@ internal class ProjectSession(ApplicationDbContext context, TestUser user) : IAs
     public UnitOfWork Unit => new(context);
     public CreateProjectHandler Create => new(Repository, Unit, user, TimeProvider.System);
     public UpdateProjectHandler Update => new(Repository, Access, Unit, user, TimeProvider.System);
-    public SetProjectArchiveHandler Archive => new(Repository, Access, Unit, user, TimeProvider.System);
     public AddProjectMemberHandler AddMember => new(Repository, Access, Unit, user, TimeProvider.System);
     public RemoveProjectMemberHandler RemoveMember => new(Repository, Access, Unit, user, TimeProvider.System, new WorkItemRepository(context));
     public TransferProjectOwnershipHandler Transfer => new(Repository, Access, Unit, user, TimeProvider.System);

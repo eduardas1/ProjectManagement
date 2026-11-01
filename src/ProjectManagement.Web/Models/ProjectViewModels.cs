@@ -23,13 +23,3 @@ public class EditProjectViewModel
     public string? Description { get; set; }
     public string Key { get; set; } = "";
 }
-
-public class ArchiveProjectViewModel
-{
-    public int ProjectId { get; set; }
-    [Range(1, long.MaxValue)]
-    public long ExpectedVersion { get; set; }
-    public bool IsArchived { get; set; }
-    public string Name { get; set; } = "";
-    public string Key { get; set; } = "";
-}

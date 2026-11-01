@@ -13,7 +13,8 @@ public class WorkItemReadRepository(ApplicationDbContext context, ICurrentUser c
     private readonly IQueryable<PersonSummary> people = PersonQueries.Select(context);
 
     private IQueryable<WorkItem> WorkQuery(int projectId)
-        => context.WorkItems.AsNoTracking().Where(work => work.ProjectId == projectId
+        => context.WorkItems.AsNoTracking().Where(work => work.ProjectId == projectId && !work.IsArchived
+            && context.Projects.Any(project => project.Id == projectId && !project.IsArchived)
             && context.ProjectMembers.Any(member => member.ProjectId == projectId && member.UserId == currentUser.UserId));
 
     private IQueryable<Label> LabelQuery(int projectId)
@@ -21,17 +22,17 @@ public class WorkItemReadRepository(ApplicationDbContext context, ICurrentUser c
             && context.ProjectMembers.Any(member => member.ProjectId == projectId && member.UserId == currentUser.UserId));
 
     private Task<WorkProject?> GetProjectAsync(int projectId, CancellationToken cancellationToken)
-        => context.Projects.AsNoTracking().Where(project => project.Id == projectId
+        => context.Projects.AsNoTracking().Where(project => project.Id == projectId && !project.IsArchived
             && context.ProjectMembers.Any(member => member.ProjectId == projectId && member.UserId == currentUser.UserId))
             .Select(project => new WorkProject(project.Id, project.Key, project.Name, project.IsArchived, project.OwnerId == currentUser.UserId))
             .SingleOrDefaultAsync(cancellationToken);
 
-    public async Task<WorkItemList?> ListAsync(int projectId, bool archived, int page, CancellationToken cancellationToken, WorkItemStatus? status = null)
+    public async Task<WorkItemList?> ListAsync(int projectId, int page, CancellationToken cancellationToken, WorkItemStatus? status = null)
     {
         if (status.HasValue && !Enum.IsDefined(status.Value)) throw new ArgumentOutOfRangeException(nameof(status));
         var project = await GetProjectAsync(projectId, cancellationToken);
         if (project == null) return null;
-        var query = WorkQuery(projectId).Where(work => work.IsArchived == archived);
+        var query = WorkQuery(projectId);
         if (status.HasValue) query = query.Where(work => work.Status == status.Value);
         var total = await query.CountAsync(cancellationToken);
         var pages = Math.Max(1, (total + 19) / 20);
@@ -43,7 +44,7 @@ public class WorkItemReadRepository(ApplicationDbContext context, ICurrentUser c
                 people.Where(user => user.Id == work.AssigneeId).Select(user => user.LastName).FirstOrDefault() ?? "",
                 people.Where(user => user.Id == work.AssigneeId).Select(user => user.Email).FirstOrDefault() ?? "")), work.DueDate, work.Version))
             .ToListAsync(cancellationToken);
-        return new WorkItemList(project, archived, page, pages, total, items, status);
+        return new WorkItemList(project, page, pages, total, items, status);
     }
 
     public async Task<WorkBoard?> GetBoardAsync(int projectId, CancellationToken cancellationToken)

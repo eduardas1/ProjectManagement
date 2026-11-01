@@ -23,7 +23,6 @@ public class ProjectProgressRepository(ApplicationDbContext context, ICurrentUse
         var selected = await search.SelectAsync(projectId, input, cancellationToken);
         if (selected.Status != OperationStatus.Success)
             return new OperationResult<ProjectProgress>(selected.Status, null, selected.Field, selected.Error);
-        if (input.Archived) return OperationResult<ProjectProgress>.Invalid(nameof(input.Archived), "Progress reports apply to active work. Switch off archived work first.");
         var selection = selected.Value!;
         var today = calendar.Today;
         var groups = await selection.Items.Where(work => work.Type != WorkItemType.Epic

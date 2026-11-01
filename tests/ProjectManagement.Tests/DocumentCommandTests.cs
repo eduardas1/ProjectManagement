@@ -45,7 +45,7 @@ public class DocumentCommandTests
     }
 
     [Fact]
-    public async Task SharedEditsKeepImmutableSnapshotsAcrossArchiveVersionGaps()
+    public async Task SharedEditsKeepImmutableSnapshotsAcrossExistingVersionGaps()
     {
         // Arrange
         await using var database = new ProjectTestDatabase();
@@ -58,28 +58,16 @@ public class DocumentCommandTests
             Assert.Equal(OperationStatus.Success, (await member.UpdateDocument.Handle(new(project, id, 1, "Plan", body), default)).Status);
 
         // Act
-        await using (var owner = new DocumentSession(database.OpenContext(), new TestUser("owner")))
-            Assert.Equal(OperationStatus.Success, (await owner.ArchiveDocument.Handle(new(project, id, 2, true), default)).Status);
-        await using (var member = new DocumentSession(database.OpenContext(), new TestUser("member")))
-            Assert.Equal(OperationStatus.Invalid, (await member.UpdateDocument.Handle(new(project, id, 3, "Plan", "Archived edit"), default)).Status);
-        await using (var reader = database.OpenContext())
+        await using (var fixture = database.OpenContext())
         {
-            var archived = await new CollaborationReadRepository(reader, new TestUser("member")).GetDocumentAsync(project, id, default);
-            Assert.True(archived!.Document.IsArchived);
-            Assert.Equal(body, archived.Body);
+            (await fixture.ProjectDocuments.SingleAsync()).Version = 4;
+            await fixture.SaveChangesAsync();
         }
-        await using (var owner = new DocumentSession(database.OpenContext(), new TestUser("owner")))
-            Assert.Equal(OperationStatus.Success, (await owner.ArchiveDocument.Handle(new(project, id, 3, false), default)).Status);
         await using (var member = new DocumentSession(database.OpenContext(), new TestUser("member")))
         {
             Assert.Equal(OperationStatus.Success, (await member.UpdateDocument.Handle(new(project, id, 4, "Final plan", "Final body"), default)).Status);
             Assert.Equal(OperationStatus.Success, (await member.UpdateDocument.Handle(new(project, id, 5, " Final plan ", "Final body"), default)).Status);
             Assert.Equal(OperationStatus.Conflict, (await member.UpdateDocument.Handle(new(project, id, 4, "Final plan", "Final body"), default)).Status);
-        }
-        await using (var owner = new DocumentSession(database.OpenContext(), new TestUser("owner")))
-        {
-            Assert.Equal(OperationStatus.Conflict, (await owner.ArchiveDocument.Handle(new(project, id, 4, false), default)).Status);
-            Assert.Equal(OperationStatus.Success, (await owner.ArchiveDocument.Handle(new(project, id, 5, false), default)).Status);
         }
         await using var read = database.OpenContext();
         var document = await read.ProjectDocuments.SingleAsync();
@@ -97,7 +85,7 @@ public class DocumentCommandTests
         Assert.Equal(new[] { "", body, "Final body" }, revisions.Select(revision => revision.Body));
         Assert.Equal(new[] { "owner", "member", "member" }, revisions.Select(revision => revision.EditorId));
         Assert.All(revisions, revision => Assert.Equal(DateTimeKind.Utc, revision.SavedAtUtc.Kind));
-        Assert.Equal(new[] { "DocumentCreated", "DocumentUpdated", "DocumentArchived", "DocumentRestored", "DocumentUpdated" }, events.Select(change => change.Action));
+        Assert.Equal(new[] { "DocumentCreated", "DocumentUpdated", "DocumentUpdated" }, events.Select(change => change.Action));
         Assert.All(events, change =>
         {
             Assert.Null(change.WorkItemId);
@@ -111,43 +99,39 @@ public class DocumentCommandTests
     }
 
     [Fact]
-    public async Task CurrentOwnerArchivePermissionChangesWithTransferAndRevocation()
+    public async Task SharedDocumentRightsFollowCurrentMembershipAfterTransfer()
     {
         // Arrange
         await using var database = new ProjectTestDatabase();
         var project = await PrepareAsync(database);
         var id = await CreateAsync(database, project, "Plan");
-        await using (var member = new DocumentSession(database.OpenContext(), new TestUser("member")))
-            Assert.Equal(OperationStatus.NotFound, (await member.ArchiveDocument.Handle(new(project, id, 1, true), default)).Status);
-        await using (var owner = database.Open()) await owner.AddMember.Handle(new(project, 2, "other@example.test"), default);
-        await using (var owner = database.Open()) await owner.Transfer.Handle(new(project, 3, "other"), default);
+        await using (var owner = database.Open())
+        {
+            await owner.AddMember.Handle(new(project, 2, "other@example.test"), default);
+            await owner.Transfer.Handle(new(project, 3, "other"), default);
+        }
 
         // Act
         await using (var former = new DocumentSession(database.OpenContext(), new TestUser("owner")))
-            Assert.Equal(OperationStatus.NotFound, (await former.ArchiveDocument.Handle(new(project, id, 1, true), default)).Status);
-        await using (var current = new DocumentSession(database.OpenContext(), new TestUser("other")))
-        {
-            Assert.Equal(OperationStatus.Success, (await current.ArchiveDocument.Handle(new(project, id, 1, true), default)).Status);
-            Assert.Equal(OperationStatus.Success, (await current.ArchiveDocument.Handle(new(project, id, 2, false), default)).Status);
-        }
-        await using (var former = new DocumentSession(database.OpenContext(), new TestUser("owner")))
-            Assert.Equal(OperationStatus.Success, (await former.UpdateDocument.Handle(new(project, id, 3, "Shared", "Member edit"), default)).Status);
+            Assert.Equal(OperationStatus.Success, (await former.UpdateDocument.Handle(new(project, id, 1, "Shared", "Member edit"), default)).Status);
         await using (var current = new ProjectSession(database.OpenContext(), new TestUser("other")))
-            await current.RemoveMember.Handle(new(project, 4, "owner"), default);
+            Assert.Equal(OperationStatus.Success, (await current.RemoveMember.Handle(new(project, 4, "owner"), default)).Status);
         await using var revoked = new DocumentSession(database.OpenContext(), new TestUser("owner"));
-
-        // Assert
-        Assert.Equal(OperationStatus.NotFound, (await revoked.UpdateDocument.Handle(new(project, id, 4, "Revoked", ""), default)).Status);
-        Assert.Equal(OperationStatus.NotFound, (await revoked.CreateDocument.Handle(new(project, "Revoked", null), default)).Status);
+        var edit = await revoked.UpdateDocument.Handle(new(project, id, 2, "Revoked", ""), default);
+        var create = await revoked.CreateDocument.Handle(new(project, "Revoked", null), default);
         await using var read = database.OpenContext();
         var document = await read.ProjectDocuments.SingleAsync();
+
+        // Assert
+        Assert.Equal(OperationStatus.NotFound, edit.Status);
+        Assert.Equal(OperationStatus.NotFound, create.Status);
         Assert.Equal("Shared", document.Title);
-        Assert.Equal(4, document.Version);
-        Assert.Equal(new long[] { 1, 4 }, await read.DocumentRevisions.OrderBy(revision => revision.Version).Select(revision => revision.Version).ToArrayAsync());
+        Assert.Equal(2, document.Version);
+        Assert.Equal(new long[] { 1, 2 }, await read.DocumentRevisions.OrderBy(revision => revision.Version).Select(revision => revision.Version).ToArrayAsync());
     }
 
     [Fact]
-    public async Task BoundsForeignTargetsAndArchivedProjectRejectWithoutChangingContent()
+    public async Task BoundsForeignTargetsAndLegacyRetiredProjectDoNotChangeContent()
     {
         // Arrange
         await using var database = new ProjectTestDatabase();
@@ -165,15 +149,16 @@ public class DocumentCommandTests
         Assert.Equal(OperationStatus.NotFound, (await member.UpdateDocument.Handle(new(project, foreignDocument, 1, "Wrong parent", ""), default)).Status);
         Assert.Equal(OperationStatus.NotFound, (await member.CreateDocument.Handle(new(foreign, "Private", null), default)).Status);
         Assert.Equal(OperationStatus.Success, (await member.CreateDocument.Handle(new(project, new string('x', 200), new string('b', 100000)), default)).Status);
-        await using (var owner = database.Open()) await owner.Archive.Handle(new(project, 2, true), default);
+        await using (var fixture = database.OpenContext())
+        {
+            (await fixture.Projects.SingleAsync(item => item.Id == project)).IsArchived = true;
+            await fixture.SaveChangesAsync();
+        }
         await using (var current = new DocumentSession(database.OpenContext(), new TestUser("member")))
         {
-            Assert.Equal(OperationStatus.Invalid, (await current.UpdateDocument.Handle(new(project, id, 1, "Archived", null), default)).Status);
-            Assert.Equal(OperationStatus.Invalid, (await current.CreateDocument.Handle(new(project, "Archived", null), default)).Status);
+            Assert.Equal(OperationStatus.NotFound, (await current.UpdateDocument.Handle(new(project, id, 1, "Archived", null), default)).Status);
+            Assert.Equal(OperationStatus.NotFound, (await current.CreateDocument.Handle(new(project, "Archived", null), default)).Status);
         }
-        await using (var owner = new DocumentSession(database.OpenContext(), new TestUser("owner")))
-            Assert.Equal(OperationStatus.Invalid, (await owner.ArchiveDocument.Handle(new(project, id, 1, false), default)).Status);
-        await using (var owner = database.Open()) await owner.RemoveMember.Handle(new(project, 3, "member"), default);
         await using var read = database.OpenContext();
         var document = await read.ProjectDocuments.SingleAsync(document => document.Id == id);
 
@@ -187,7 +172,7 @@ public class DocumentCommandTests
     }
 
     [Fact]
-    public async Task FailedEventRollsBackDocumentSnapshotEditAndArchive()
+    public async Task FailedEventRollsBackDocumentSnapshotsAndEdits()
     {
         // Arrange
         await using var database = new ProjectTestDatabase();
@@ -204,8 +189,6 @@ public class DocumentCommandTests
         var id = await CreateAsync(database, project, "Original");
         await using (var failing = new DocumentSession(database.OpenContext(new RejectProjectEvent()), new TestUser("member")))
             await Assert.ThrowsAsync<InvalidOperationException>(() => failing.UpdateDocument.Handle(new(project, id, 1, "Not saved", "Private body"), default));
-        await using (var failing = new DocumentSession(database.OpenContext(new RejectProjectEvent()), new TestUser("owner")))
-            await Assert.ThrowsAsync<InvalidOperationException>(() => failing.ArchiveDocument.Handle(new(project, id, 1, true), default));
         await using var context = database.OpenContext();
         var document = await context.ProjectDocuments.SingleAsync();
 
@@ -239,8 +222,8 @@ public class DocumentCommandTests
         var outsider = new CollaborationReadRepository(context, new TestUser("other"));
 
         // Act
-        var first = await repository.ListDocumentsAsync(project, false, 0, default);
-        var last = await repository.ListDocumentsAsync(project, false, int.MaxValue, default);
+        var first = await repository.ListDocumentsAsync(project, 0, default);
+        var last = await repository.ListDocumentsAsync(project, int.MaxValue, default);
         var revisions = await repository.ListRevisionsAsync(project, id, 1, default);
         var oldest = await repository.ListRevisionsAsync(project, id, int.MaxValue, default);
         var detail = await repository.GetRevisionAsync(project, id, oldest!.Items.Last().Id, default);
@@ -267,7 +250,7 @@ public class DocumentCommandTests
         Assert.Equal(DateTimeKind.Utc, detail.Revision.SavedAtUtc.Kind);
         await using (var owner = database.Open()) await owner.RemoveMember.Handle(new(project, 2, "member"), default);
         Assert.Null(await repository.GetDocumentAsync(project, id, default));
-        Assert.Null(await repository.ListDocumentsAsync(project, false, 1, default));
+        Assert.Null(await repository.ListDocumentsAsync(project, 1, default));
         Assert.Null(await repository.ListRevisionsAsync(project, id, 1, default));
         Assert.Null(await repository.GetRevisionAsync(project, id, detail.Revision.Id, default));
     }
@@ -293,5 +276,4 @@ internal class DocumentSession(ApplicationDbContext context, TestUser user) : Pr
     private CollaborationRepository Documents => new(Context);
     public CreateDocumentHandler CreateDocument => new(Documents, Repository, Access, Unit, User, TimeProvider.System);
     public UpdateDocumentHandler UpdateDocument => new(Documents, Repository, Access, Unit, User, TimeProvider.System);
-    public SetDocumentArchiveHandler ArchiveDocument => new(Documents, Repository, Access, Unit, User, TimeProvider.System);
 }

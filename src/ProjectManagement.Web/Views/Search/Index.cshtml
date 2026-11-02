@@ -27,11 +27,9 @@
     </div>
     <details class="advanced-search" data-advanced-search open="@(!string.IsNullOrWhiteSpace(Model.Input.Expression) || ViewData.ModelState.ContainsKey("Input.Expression") && ViewData.ModelState["Input.Expression"]!.Errors.Count > 0)">
         <summary>Advanced search</summary>
-    <div class="form-group"><label id="expression-label" asp-for="Input.Expression">Advanced expression</label><textarea asp-for="Input.Expression" maxlength="2000" rows="2" class="form-control" aria-describedby="expression-help"></textarea>
-        <p id="expression-help" class="help-block">Basic controls and this expression combine with AND. At most 2000 combined characters, 32 comparisons and 8 nested groups.</p>
+    <div class="form-group"><label id="expression-label" asp-for="Input.Expression">Advanced expression</label><textarea asp-for="Input.Expression" maxlength="2000" rows="2" class="form-control"></textarea>
     </div>
         <button type="button" class="btn btn-default btn-sm hidden" data-expression-clear>Clear advanced expression</button>
-        <p class="help-block">Use arrow keys to choose a suggestion, Enter or Tab to accept, and Escape to close. Ctrl+Space opens suggestions.</p>
     </details>
     <script type="application/json" data-search-grammar>@Json.Serialize(new {
         fields = ProjectManagement.Application.Search.WorkSearchGrammar.Fields,
@@ -48,7 +46,7 @@
 <details>
     <summary>Advanced search help</summary>
     <p>Fields: <code>type</code>, <code>status</code>, <code>priority</code>, <code>assignee</code> (account ID), <code>label</code>, <code>deadline</code>, <code>title</code>, <code>description</code>, <code>number</code>.</p>
-    <p>Use <code>,</code> for AND, <code>|</code> for OR and parentheses for grouping. Without groups, operators apply left to right. This is not Jira JQL.</p>
+    <p>Use <code>,</code> for AND, <code>|</code> for OR and parentheses for grouping. Without groups, operators apply left to right.</p>
     <p>Example: <code>(status=Todo|status=InProgress),priority=High</code>. Enum values use the names shown above. Text operators: <code>=</code>, <code>!=</code>, <code>=*</code>, <code>!*</code>, <code>^</code>, <code>!^</code>, <code>$</code>, <code>!$</code>. Labels support only positive <code>=</code>, <code>=*</code>, <code>^</code> and <code>$</code>.</p>
     <p>Use a backslash for literal syntax characters, for example <code>title=Payment \(retry\)</code>. Text matching is case-sensitive unless you append <code>/i</code>; use that flag only for ASCII text. Other text requires exact case and accents. Basic searches fold ASCII-only input and match other input exactly.</p>
     <p>Numbers and ISO dates support <code>=</code>, <code>!=</code>, <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code> and <code>&gt;=</code>. <code>deadline=</code> finds missing due dates and <code>assignee=</code> finds unassigned work. A complete work key in the text box is treated as a key in this project.</p>

@@ -13,7 +13,6 @@
         <label asp-for="Format"></label>
         <select asp-for="Format" class="form-control" asp-items="Html.GetEnumSelectList<ProjectManagement.Domain.Enums.DocumentFormat>()"></select>
         <span asp-validation-for="Format" class="text-danger"></span>
-        <p class="help-block">Plain text keeps your text as entered. Markdown supports headings, lists and links.</p>
     </div>
     <div class="form-group">
         <label asp-for="Body"></label><textarea asp-for="Body" class="form-control" rows="15" maxlength="100000"></textarea>

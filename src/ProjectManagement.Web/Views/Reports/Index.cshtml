@@ -14,12 +14,10 @@
         <dt>Eligible work</dt><dd data-report-key="eligible">@progress.EligibleTotal</dd>
         <dt>Completed</dt><dd data-report-key="completed">@progress.Completed</dd>
         <dt>Cancelled</dt><dd data-report-key="cancelled">@progress.Cancelled</dd>
-        <dt>Completion</dt><dd data-report-key="completion">@(progress.CompletionPercent.HasValue ? progress.CompletionPercent.Value.ToString("F1", CultureInfo.InvariantCulture) + "%" : "Not available")</dd>
+        <dt>Completion</dt><dd data-report-key="completion">@(progress.CompletionPercent.HasValue ? progress.CompletionPercent.Value.ToString("F1", CultureInfo.InvariantCulture) + "%" : "Not available") <small>(@progress.Completed/<span data-report-key="denominator">@progress.CompletionTotal</span>)</small></dd>
         <dt>Overdue</dt><dd data-report-key="overdue">@progress.Overdue</dd>
     </dl>
-    <p>Counts cover execution work. Epics and parents with subtasks are excluded.
-        Completion uses @progress.Completed completed out of <span data-report-key="denominator">@progress.CompletionTotal</span> eligible non-cancelled items.
-        Overdue work has an unfinished status and a due date before the reporting date.</p>
+
     @if (progress.EligibleTotal == 0) { <p>No matching execution work.</p> }
     <div class="row">
         <div class="col-sm-6">

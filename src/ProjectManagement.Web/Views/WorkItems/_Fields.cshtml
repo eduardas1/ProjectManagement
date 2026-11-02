@@ -33,7 +33,6 @@
             @foreach (var id in (Model.LabelIds ?? []).Where(id => !Model.Options.Labels.Any(label => label.Id == id)))
             { <option value="@id">Unavailable label</option> }
         </select>
-        <p class="help-block">Choose any project labels. Leave empty for no labels.</p>
     }
     <span asp-validation-for="LabelIds" class="text-danger"></span>
 </div>

@@ -262,6 +262,8 @@ main.container > h1 { margin-top: 0; }
 }
 .project-key {
     flex-shrink: 0;
+    font-size: 150%;
+    padding: .25em .5em;
 }
 .project-name {
     min-width: 0;

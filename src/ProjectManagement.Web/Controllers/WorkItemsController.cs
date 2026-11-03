@@ -114,7 +114,7 @@ public class WorkItemsController(ISender sender) : Controller
             if (result.Status == OperationStatus.Success)
             {
                 return WorkSaved(projectId, result.Value!.Id, result.Value.TargetReached ? "Work item created."
-                    : $"Work item created, but it could not be moved to {result.Value.Target}. Open it to check its current status.");
+                    : $"Created; move to {result.Value.Target} failed. Check current status.");
             }
             ApplyError(new OperationResult<int>(result.Status, 0, result.Field, result.Error));
         }

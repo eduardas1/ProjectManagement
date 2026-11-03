@@ -37,7 +37,7 @@ public class AttachmentsController(ISender sender) : Controller
         if (Request.ContentLength > AttachmentFile.TransportLimit)
             return StatusCode(StatusCodes.Status413PayloadTooLarge, "The upload request is too large.");
         if (!ModelState.IsValid && model.ProjectId == 0)
-            return BadRequest("The upload form could not be read. Select one file no larger than 5 MiB.");
+            return BadRequest("Upload failed. Select a file up to 5 MiB.");
         if (projectId != model.ProjectId || workItemId != model.WorkItemId || documentId != model.DocumentId) return NotFound();
         var target = await sender.Send(new GetAttachmentTargetQuery(projectId, workItemId, documentId), cancellationToken);
         if (target == null) return NotFound();

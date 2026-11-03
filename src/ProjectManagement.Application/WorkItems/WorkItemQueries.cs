@@ -1,10 +1,11 @@
+using ProjectManagement.Application.Common;
 using MediatR;
 using ProjectManagement.Domain.Enums;
 using ProjectManagement.Application.Interfaces;
 
 namespace ProjectManagement.Application.WorkItems;
 
-public record ListWorkItemsQuery(int ProjectId, int Page = 1, WorkItemStatus? Status = null) : IRequest<WorkItemList?>;
+public record ListWorkItemsQuery(int ProjectId, int Page = 1, WorkItemStatus? Status = null, TableOptions? Table = null) : IRequest<WorkItemList?>;
 public record GetWorkItemQuery(int ProjectId, int WorkItemId) : IRequest<WorkItemDetails?>;
 public record GetWorkItemOptionsQuery(int ProjectId) : IRequest<WorkItemOptions?>;
 public record ListLabelsQuery(int ProjectId) : IRequest<ProjectLabels?>;
@@ -12,7 +13,7 @@ public record ListLabelsQuery(int ProjectId) : IRequest<ProjectLabels?>;
 public class ListWorkItemsHandler(IWorkItemReadRepository repository) : IRequestHandler<ListWorkItemsQuery, WorkItemList?>
 {
     public Task<WorkItemList?> Handle(ListWorkItemsQuery request, CancellationToken cancellationToken)
-        => repository.ListAsync(request.ProjectId, request.Page, cancellationToken, request.Status);
+        => repository.ListAsync(request.ProjectId, request.Page, cancellationToken, request.Status, request.Table);
 }
 
 public class GetWorkItemHandler(IWorkItemReadRepository repository) : IRequestHandler<GetWorkItemQuery, WorkItemDetails?>

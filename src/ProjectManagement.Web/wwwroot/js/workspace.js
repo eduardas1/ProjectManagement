@@ -100,7 +100,7 @@
         }).fail(function (xhr, status) {
             if (status === 'abort' || current !== navigationGeneration) return;
             if (xhr.status === 400 && xhr.getResponseHeader('X-Workboard-Partial') === 'workspace') { apply(xhr.responseText); return; }
-            fail(xhr.status === 401 ? 'Your session has ended. Sign in again to continue.' : 'The project view could not be loaded. Your current view has been kept.');
+            fail(xhr.status === 401 ? 'Your session has ended. Sign in again to continue.' : 'Could not load project. Current view retained.');
         }).always(function () { if (current === navigationGeneration) { navigation = null; content.attr('aria-busy', 'false'); } });
         function apply(html) {
             var replacePreview = window.history.state && window.history.state.workboardPreview;
@@ -147,12 +147,12 @@
         panel.attr('aria-busy', 'true'); syncPhone(); panel.find('[data-preview-close]').trigger('focus');
         request = $.ajax({url: url, method: 'GET', headers: {'X-Workboard-View': 'preview'}}).done(function (html, status, xhr) {
             if (generation !== current) return;
-            if (xhr.getResponseHeader('X-Workboard-Partial') !== 'preview') { fail('The work item could not be displayed. Open its full page or close this panel.'); return; }
+            if (xhr.getResponseHeader('X-Workboard-Partial') !== 'preview') { fail('Could not display item. Open full page.'); return; }
             body.empty().append($.parseHTML(html, document, false));
             $(document).trigger('workboard:detail-updated', [body]);
         }).fail(function (xhr, status) {
             if (status === 'abort' || generation !== current) return;
-            fail(xhr.status === 401 ? 'Your session has ended. Sign in again to open this work item.' : 'This work item could not be loaded. Open its full page or close this panel.');
+            fail(xhr.status === 401 ? 'Session expired. Sign in again.' : 'Could not load item. Open full page.');
         }).always(function () { if (generation === current) { request = null; panel.attr('aria-busy', 'false'); } });
         function fail(text) { body.empty(); error.removeClass('hidden').text(text); }
     }

@@ -11,7 +11,7 @@
             { <option value="@item.Id">@Model.Details.Project.Key-@item.Number @item.Title</option> }
             </select><span asp-validation-for="ParentId" class="text-danger"></span>
         </div>
-        <p>The Subtask follows its parent's Epic.</p>
+        <p>Epic inherited from parent.</p>
     }
     else if (Model.Details.Item.Type != WorkItemType.Epic)
     {

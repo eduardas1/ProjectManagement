@@ -275,3 +275,11 @@ main.container > h1 { margin-top: 0; }
     font-size: 16px;
     font-weight: 600;
 }
+
+.table-controls { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:10px 0 16px; }
+.table-controls label { display:inline-flex; align-items:center; gap:6px; margin:0; font-weight:normal; }
+.table-controls select { width:auto; min-width:60px; }
+.table-sort { border:0; padding:0; background:transparent; color:inherit; font:inherit; font-weight:bold; text-align:inherit; }
+.table th[aria-sort] a { color:inherit; white-space:nowrap; }
+.search-syntax { display:grid; grid-template-columns:max-content 1fr; gap:4px 16px; }
+.search-syntax dd { margin:0; }

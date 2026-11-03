@@ -6,9 +6,8 @@
 @if (Model.Total == 0) { <p>No attachments.</p> }
 else
 {
-    <p>@Model.Total @(Model.Total == 1 ? "file" : "files"). Page @Model.Page of @Model.PageCount.</p>
-    <div class="table-responsive"><table class="table table-striped">
-        <thead><tr><th>File</th><th>Size (bytes)</th><th>Uploaded (UTC)</th><th>Uploaded by</th><th>Actions</th></tr></thead>
+    <div class="table-responsive"><table table-options="@(Model.Table ?? new())" table-page="@Model.Page" table-total="@Model.Total" table-context="true" class="table table-striped">
+        <thead><tr><th table-sort="name">File</th><th table-sort="size">Size (bytes)</th><th table-sort="uploaded">Uploaded (UTC)</th><th table-sort="author">Uploaded by</th><th>Actions</th></tr></thead>
         <tbody>@foreach (var file in Model.Items)
         {
             <tr><td class="project-text attachment-name"><a asp-action="Download" asp-route-projectId="@Model.Target.Project.Id" asp-route-id="@file.Id">@file.DisplayName</a></td><td>@file.Length</td><td>@file.UploadedAtUtc.ToString("yyyy-MM-dd HH:mm")</td><td class="project-text"><partial name="_Person" model="file.UploadedBy" /></td><td>
@@ -16,10 +15,4 @@ else
             </td></tr>
         }</tbody>
     </table></div>
-    <nav aria-label="Attachment pages"><ul class="pager">
-    @if (Model.Page > 1)
-    { <li><a data-context-link asp-action="Index" asp-route-projectId="@Model.Target.Project.Id" asp-route-workItemId="@Model.Target.WorkItemId" asp-route-documentId="@Model.Target.DocumentId" asp-route-page="@(Model.Page - 1)">Previous</a></li> }
-    @if (Model.Page < Model.PageCount)
-    { <li><a data-context-link asp-action="Index" asp-route-projectId="@Model.Target.Project.Id" asp-route-workItemId="@Model.Target.WorkItemId" asp-route-documentId="@Model.Target.DocumentId" asp-route-page="@(Model.Page + 1)">Next</a></li> }
-    </ul></nav>
 }

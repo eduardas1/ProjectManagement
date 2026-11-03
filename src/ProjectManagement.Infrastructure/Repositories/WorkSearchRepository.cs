@@ -43,7 +43,12 @@ public class WorkSearchRepository(ApplicationDbContext context, ICurrentUser cur
         var total = await query.CountAsync(cancellationToken);
         var pages = (int)Math.Max(1, (total + (long)input.PageSize - 1) / input.PageSize);
         var page = Math.Min(input.Page, pages);
-        var ordered = ((IOrderedQueryable<WorkItem>)query.ApplyOrdering(ordering, mapper)).ThenBy(work => work.Id);
+        var orderingMapper = new WorkItemSearchMapper();
+        orderingMapper.AddMap("orderAssignee", work => people.Where(user => user.Id == work.AssigneeId)
+            .Select(user => user.FirstName + " " + user.LastName + " " + user.Email).FirstOrDefault());
+        var mappedOrdering = string.Join(",", ordering.Split(',').Select(part => part.StartsWith("assignee", StringComparison.Ordinal)
+            ? "orderAssignee" + part[8..] : part));
+        var ordered = ((IOrderedQueryable<WorkItem>)query.ApplyOrdering(mappedOrdering, orderingMapper)).ThenBy(work => work.Id);
         var items = await ordered.Skip(checked((page - 1) * input.PageSize)).Take(input.PageSize)
             .Select(work => new WorkItemSummary(work.Id, work.Number, work.Title, work.Type, work.Status, work.Priority,
                 (work.AssigneeId == null ? null : new PersonSummary(work.AssigneeId,

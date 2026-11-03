@@ -1,5 +1,5 @@
 @model TransferOwnershipViewModel
-<p>You will remain a project member. The new owner will manage the project and its members.</p>
+<p>You remain a member.</p>
 <form data-modal-submit data-modal-dirty asp-action="Transfer" asp-route-id="@Model.ProjectId" method="post">
     <input asp-for="ProjectId" type="hidden" />
     <input asp-for="ExpectedVersion" type="hidden" />

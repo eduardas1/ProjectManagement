@@ -19,7 +19,7 @@
         var draft = {body: form.find('[name=Body]').val() || '', version: form.find('[name=ExpectedVersion]').val(), locked: state.locked};
         memory[key(state.url)] = draft;
         try { window.sessionStorage.setItem(key(state.url), JSON.stringify(draft)); }
-        catch (_) { state.notice.text('Your draft is kept in this tab. Browser storage is unavailable.'); }
+        catch (_) { state.notice.text('Storage unavailable. Draft retained in this tab.'); }
     }
     function erase(url) { delete memory[key(url)]; try { window.sessionStorage.removeItem(key(url)); } catch (_) {} }
     function dirty() {
@@ -66,7 +66,7 @@
             form.find('[name=Body]').val(saved.body);
             if (saved.version !== undefined) form.find('[name=ExpectedVersion]').val(saved.version);
             state.locked = saved.locked === true;
-            state.notice.text(state.locked ? 'The last save needs checking. Your draft is retained; review the comments below before discarding it.' : 'Your previous draft has been restored.');
+            state.notice.text(state.locked ? 'Save unconfirmed. Draft retained. Check comments before retrying.' : 'Your previous draft has been restored.');
         }
         form.find('[type=submit]').prop('disabled', state.locked);
         form.find('textarea').first().trigger('focus');
@@ -141,7 +141,7 @@
                 state.host.detach().empty();
                 var root = target.closest('[data-modal-read-view=preview]');
                 (root.length ? root : target).empty().append(state.host);
-                state.notice = $('<p>').attr('role', 'status').text('Your access has changed. Your comment draft is retained here.').appendTo(state.host);
+                state.notice = $('<p>').attr('role', 'status').text('Access changed. Draft retained.').appendTo(state.host);
                 $('<textarea readonly>').attr('aria-label', 'Retained comment draft').addClass('form-control').val(saved ? saved.body : '').appendTo(state.host);
                 $('<button type="button">').attr('data-inline-close', '').addClass('btn btn-default').text('Close editor').appendTo(state.host);
             } else state.notice.text(message + ' Comments could not be refreshed. Reload to check before another save.');
@@ -156,19 +156,19 @@
         $.ajax({url: local(this.action), method: 'POST', data: fields, headers: {'X-Workboard-View': 'inline-comment'}, timeout: 20000})
         .done(function (data) {
             state.locked = true; keepDraft(state);
-            refresh(state, data && data.saved === true ? (data.message || 'Comment saved.') : 'Check the comments before another save. Your draft is retained.', !(data && data.saved === true));
+            refresh(state, data && data.saved === true ? (data.message || 'Comment saved.') : 'Check comments before retrying. Draft retained.', !(data && data.saved === true));
         }).fail(function (xhr) {
             if ([400,409,503].indexOf(xhr.status) !== -1 && xhr.getResponseHeader('X-Workboard-Partial') === 'inline-comment') {
                 var baseline = state.baseline;
                 formLoaded(state, xhr.responseText); state.baseline = baseline;
                 if (xhr.status === 409) {
-                    state.notice.text('This comment changed elsewhere. Your draft and submitted version are retained. Reload only after copying or discarding your draft.');
+                    state.notice.text('Comment changed. Copy your retained draft before reloading.');
                     state.locked = true; state.host.find('[type=submit]').prop('disabled', true); keepDraft(state);
                 }
                 finishPending();
             } else {
                 state.locked = true; keepDraft(state);
-                refresh(state, 'The save result needs checking. Your draft is retained and will not be sent again automatically.', true);
+                refresh(state, 'Save unconfirmed. Draft retained. Check comments before retrying.', true);
             }
         });
     });

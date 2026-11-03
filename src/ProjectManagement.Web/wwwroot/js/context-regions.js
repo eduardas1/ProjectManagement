@@ -24,6 +24,7 @@
             if (xhr.getResponseHeader('X-Workboard-Partial') !== 'list') { failed('The server did not return the expected list.'); return; }
             target.empty().append($.parseHTML(html, document, false)).attr('data-modal-list-url', url);
             notice.addClass('hidden').text('');
+            $(document).trigger('workboard:list-updated');
             if (focus) {
                 var heading = region.prev('h2');
                 if (!heading.length) heading = region.closest('main').find('h1').first();
@@ -36,7 +37,7 @@
             }
         }).fail(function (xhr, status) {
             if (!live() || status === 'abort') return;
-            failed(xhr.status === 401 ? 'Your session has ended. Sign in again to load this list.' : xhr.status === 404 ? 'This list is no longer available to your account.' : 'The list could not be loaded.');
+            failed(xhr.status === 401 ? 'Session expired. Sign in again.' : xhr.status === 404 ? 'This list is no longer available to your account.' : 'The list could not be loaded.');
         }).always(function () {
             reads = reads.filter(function (read) { return read.request !== request; });
             if (live()) { target.attr('aria-busy', 'false'); target.removeData('read-request'); }

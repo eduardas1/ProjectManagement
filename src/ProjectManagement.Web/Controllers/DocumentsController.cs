@@ -10,10 +10,10 @@ public class DocumentsController(ISender sender) : Controller
 {
     [HttpGet]
     public async Task<IActionResult> Index([FromQuery] int projectId, int page = 1,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, string? sort = null, bool descending = false, int pageSize = 20)
     {
         if (!ModelState.IsValid) return BadRequest("Invalid document list request.");
-        var documents = await sender.Send(new ListDocumentsQuery(projectId, page), cancellationToken);
+        var documents = await sender.Send(new ListDocumentsQuery(projectId, page, new TableOptions(sort ?? "", descending, pageSize)), cancellationToken);
         return documents == null ? NotFound() : View(documents);
     }
 
@@ -29,10 +29,10 @@ public class DocumentsController(ISender sender) : Controller
 
     [HttpGet]
     public async Task<IActionResult> Revisions([FromQuery] int projectId, [FromRoute] int id, int page = 1,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, string? sort = null, bool descending = false, int pageSize = 20)
     {
         if (!ModelState.IsValid) return BadRequest("Invalid revision list request.");
-        var revisions = await sender.Send(new ListRevisionsQuery(projectId, id, page), cancellationToken);
+        var revisions = await sender.Send(new ListRevisionsQuery(projectId, id, page, new TableOptions(sort ?? "", descending, pageSize)), cancellationToken);
         if (revisions == null) return NotFound();
         if (!IsAjax) return View(revisions);
         Response.Headers["X-Workboard-Partial"] = "list";

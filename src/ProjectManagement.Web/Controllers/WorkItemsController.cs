@@ -10,26 +10,26 @@ namespace ProjectManagement.Web.Controllers;
 public class WorkItemsController(ISender sender) : Controller
 {
     [HttpGet]
-    public async Task<IActionResult> Index([FromQuery] int projectId, int page = 1, WorkItemStatus? status = null, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Index([FromQuery] int projectId, int page = 1, WorkItemStatus? status = null, CancellationToken cancellationToken = default, string? sort = null, bool descending = false, int pageSize = 20)
     {
         if (!ModelState.IsValid || (status.HasValue && !Enum.IsDefined(status.Value))) return BadRequest("Select a valid work status.");
-        var list = await sender.Send(new ListWorkItemsQuery(projectId, page, status), cancellationToken);
+        var list = await sender.Send(new ListWorkItemsQuery(projectId, page, status, new TableOptions(sort ?? "", descending, pageSize)), cancellationToken);
         return list == null ? NotFound() : View(list);
     }
 
     [HttpGet]
-    public async Task<IActionResult> Backlog([FromQuery] int projectId, int page = 1, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Backlog([FromQuery] int projectId, int page = 1, CancellationToken cancellationToken = default, string? sort = null, bool descending = false, int pageSize = 20)
     {
         if (!ModelState.IsValid) return BadRequest("Invalid work list request.");
-        var list = await sender.Send(new ListWorkItemsQuery(projectId, page, WorkItemStatus.Backlog), cancellationToken);
+        var list = await sender.Send(new ListWorkItemsQuery(projectId, page, WorkItemStatus.Backlog, new TableOptions(sort ?? "", descending, pageSize)), cancellationToken);
         return list == null ? NotFound() : View("Index", list);
     }
 
     [HttpGet]
-    public async Task<IActionResult> Cancelled([FromQuery] int projectId, int page = 1, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Cancelled([FromQuery] int projectId, int page = 1, CancellationToken cancellationToken = default, string? sort = null, bool descending = false, int pageSize = 20)
     {
         if (!ModelState.IsValid) return BadRequest("Invalid work list request.");
-        var list = await sender.Send(new ListWorkItemsQuery(projectId, page, WorkItemStatus.Cancelled), cancellationToken);
+        var list = await sender.Send(new ListWorkItemsQuery(projectId, page, WorkItemStatus.Cancelled, new TableOptions(sort ?? "", descending, pageSize)), cancellationToken);
         return list == null ? NotFound() : View("Index", list);
     }
 

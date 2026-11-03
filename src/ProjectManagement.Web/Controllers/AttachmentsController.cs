@@ -10,10 +10,10 @@ public class AttachmentsController(ISender sender) : Controller
 {
     [HttpGet]
     public async Task<IActionResult> Index([FromQuery] int projectId, [FromQuery] int? workItemId, [FromQuery] int? documentId,
-        int page = 1, CancellationToken cancellationToken = default)
+        int page = 1, CancellationToken cancellationToken = default, string? sort = null, bool descending = false, int pageSize = 20)
     {
         if (!ModelState.IsValid) return BadRequest("Invalid attachment list request.");
-        var files = await sender.Send(new ListAttachmentsQuery(projectId, workItemId, documentId, page), cancellationToken);
+        var files = await sender.Send(new ListAttachmentsQuery(projectId, workItemId, documentId, page, new TableOptions(sort ?? "", descending, pageSize)), cancellationToken);
         if (files == null) return NotFound();
         if (!IsAjax) return View(files);
         Response.Headers["X-Workboard-Partial"] = "list";

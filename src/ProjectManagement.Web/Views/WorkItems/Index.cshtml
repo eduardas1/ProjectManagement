@@ -19,8 +19,8 @@
 @if (Model.Total == 0) { <p>No work items.</p> }
 else
 {
-    <div class="table-responsive"><table class="table table-striped">
-        <thead><tr><th>Key</th><th>Title</th><th>Type</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Due date</th> <th>Actions</th> </tr></thead>
+    <div class="table-responsive"><table table-options="@(Model.Table ?? new())" table-page="@Model.Page" table-total="@Model.Total" class="table table-striped">
+        <thead><tr><th table-sort="number">Key</th><th table-sort="title">Title</th><th table-sort="type">Type</th><th table-sort="status">Status</th><th table-sort="priority">Priority</th><th table-sort="assignee">Assignee</th><th table-sort="deadline">Due date</th> <th>Actions</th> </tr></thead>
         <tbody>
         @foreach (var work in Model.Items)
         {
@@ -31,9 +31,4 @@ else
         }
         </tbody>
     </table></div>
-    <p>Page @Model.Page of @Model.PageCount (@Model.Total items)</p>
-    <nav aria-label="Work item pages"><ul class="pager">
-        @if (Model.Page > 1) { <li><a data-workspace-link asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-status="@Model.Status" asp-route-page="@(Model.Page - 1)">Previous</a></li> }
-        @if (Model.Page < Model.PageCount) { <li><a data-workspace-link asp-action="Index" asp-route-projectId="@Model.Project.Id" asp-route-status="@Model.Status" asp-route-page="@(Model.Page + 1)">Next</a></li> }
-    </ul></nav>
 }

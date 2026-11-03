@@ -19,7 +19,7 @@ public record WorkHistory(PersonSummary Actor, DateTime OccurredAtUtc, string Su
 public record WorkItemOptions(WorkProject Project, IReadOnlyList<WorkAccount> Members,
     IReadOnlyList<LabelSummary> Labels, IReadOnlyList<RelatedWork> Items);
 public record WorkItemList(WorkProject Project, int Page, int PageCount, int Total,
-    IReadOnlyList<WorkItemSummary> Items, WorkItemStatus? Status = null);
+    IReadOnlyList<WorkItemSummary> Items, WorkItemStatus? Status = null, TableOptions? Table = null);
 public record ProjectLabels(WorkProject Project, IReadOnlyList<LabelSummary> Items);
 public record WorkItemDetails(WorkProject Project, WorkItem Item, PersonSummary Creator, PersonSummary? Assignee,
     RelatedWork? Parent, RelatedWork? Epic, IReadOnlyList<RelatedWork> Children,

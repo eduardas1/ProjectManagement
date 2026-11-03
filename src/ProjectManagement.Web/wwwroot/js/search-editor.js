@@ -30,16 +30,8 @@
             var entry = {form: form, textarea: textarea, view: null, live: true};
             form.data('search-editor', entry); instances.push(entry);
             var indicator = form.find('[data-expression-indicator]');
-            function changed() { indicator.text(textarea.val().trim() ? 'An advanced expression is set.' : ''); }
-            form.find('[data-search-basic],[data-search-advanced],[data-expression-clear]').removeClass('hidden');
-            form.find('[data-search-basic]').on('click', function () {
-                details.prop('open', false); form.find('[name="Input.Text"]')[0].focus(); changed();
-            });
-            form.find('[data-search-advanced]').on('click', function () {
-                details.prop('open', true); enhance().then(function () {
-                    if (entry.live && document.contains(form[0]) && details.prop('open')) entry.view ? entry.view.focus() : textarea.trigger('focus');
-                });
-            });
+            function changed() { indicator.text(textarea.val().trim() ? 'Expression active' : ''); }
+            form.find('[data-expression-clear]').removeClass('hidden');
             form.find('[data-expression-clear]').on('click', function () {
                 if (entry.view) entry.view.dispatch({changes: {from: 0, to: entry.view.state.doc.length, insert: ''}});
                 else textarea.val('');
@@ -54,7 +46,7 @@
                     if (!entry.live || !document.contains(form[0]) || entry.view) return;
                     var wasFocused = textarea[0] === document.activeElement, caret = textarea[0].selectionStart;
                     var holder = $('<div>').addClass('search-code-editor').insertAfter(textarea);
-                    var hint = $('<span>').addClass('sr-only').text('Advanced search expression. Use Ctrl+Space for suggestions.').insertBefore(holder);
+                    var hint = $('<span>').addClass('sr-only').text('Advanced expression').insertBefore(holder);
                     function complete(context) {
                         var found = window.projectSearchCompletions(context.state.doc.toString(), context.pos, grammar);
                         if (!found) return null;
@@ -83,7 +75,7 @@
                     }
                     form.find('#expression-label').on('click', function (event) { event.preventDefault(); entry.view.focus(); });
                 }).catch(function () {
-                    if (entry.live) indicator.text('Editor suggestions are unavailable. You can still use the expression field.');
+                    if (entry.live) indicator.text('Suggestions unavailable.');
                 }).finally(function () { enhancement = null; });
                 return enhancement;
             }

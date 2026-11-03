@@ -1,3 +1,4 @@
+using ProjectManagement.Application.Common;
 using MediatR;
 using ProjectManagement.Application.Interfaces;
 using ProjectManagement.Application.WorkItems;
@@ -5,9 +6,9 @@ using ProjectManagement.Application.WorkItems;
 namespace ProjectManagement.Application.Documents;
 
 public record GetDocumentProjectQuery(int ProjectId) : IRequest<WorkProject?>;
-public record ListDocumentsQuery(int ProjectId, int Page = 1) : IRequest<ProjectDocuments?>;
+public record ListDocumentsQuery(int ProjectId, int Page = 1, TableOptions? Table = null) : IRequest<ProjectDocuments?>;
 public record GetDocumentQuery(int ProjectId, int DocumentId) : IRequest<DocumentDetails?>;
-public record ListRevisionsQuery(int ProjectId, int DocumentId, int Page = 1) : IRequest<DocumentRevisions?>;
+public record ListRevisionsQuery(int ProjectId, int DocumentId, int Page = 1, TableOptions? Table = null) : IRequest<DocumentRevisions?>;
 public record GetRevisionQuery(int ProjectId, int DocumentId, int RevisionId) : IRequest<DocumentRevisionDetails?>;
 
 public class GetDocumentProjectHandler(ICollaborationReadRepository repository) : IRequestHandler<GetDocumentProjectQuery, WorkProject?>
@@ -19,7 +20,7 @@ public class GetDocumentProjectHandler(ICollaborationReadRepository repository) 
 public class ListDocumentsHandler(ICollaborationReadRepository repository) : IRequestHandler<ListDocumentsQuery, ProjectDocuments?>
 {
     public Task<ProjectDocuments?> Handle(ListDocumentsQuery request, CancellationToken cancellationToken)
-        => repository.ListDocumentsAsync(request.ProjectId, request.Page, cancellationToken);
+        => repository.ListDocumentsAsync(request.ProjectId, request.Page, cancellationToken, request.Table);
 }
 
 public class GetDocumentHandler(ICollaborationReadRepository repository) : IRequestHandler<GetDocumentQuery, DocumentDetails?>
@@ -31,7 +32,7 @@ public class GetDocumentHandler(ICollaborationReadRepository repository) : IRequ
 public class ListRevisionsHandler(ICollaborationReadRepository repository) : IRequestHandler<ListRevisionsQuery, DocumentRevisions?>
 {
     public Task<DocumentRevisions?> Handle(ListRevisionsQuery request, CancellationToken cancellationToken)
-        => repository.ListRevisionsAsync(request.ProjectId, request.DocumentId, request.Page, cancellationToken);
+        => repository.ListRevisionsAsync(request.ProjectId, request.DocumentId, request.Page, cancellationToken, request.Table);
 }
 
 public class GetRevisionHandler(ICollaborationReadRepository repository) : IRequestHandler<GetRevisionQuery, DocumentRevisionDetails?>

@@ -58,11 +58,11 @@
     }
     function showError(message) { error.text(message).removeClass('hidden'); }
     function failureMessage(xhr) {
-        if (xhr.status === 401) return 'Your session has ended. Sign in again before trying this change.';
-        if (xhr.status === 403 || xhr.status === 404) return 'This item or project is no longer available to your account.';
-        if (xhr.status === 413) return 'The upload request is too large. Select one file no larger than 5 MiB.';
-        if (xhr.status === 0) return 'The connection was interrupted. Check whether the change was saved before trying again.';
-        return 'The form could not be loaded or saved. Your input has been kept. Please try again.';
+        if (xhr.status === 401) return 'Session expired. Sign in again.';
+        if (xhr.status === 403 || xhr.status === 404) return 'Item unavailable or access denied.';
+        if (xhr.status === 413) return 'File too large. Maximum 5 MiB.';
+        if (xhr.status === 0) return 'Connection lost. Check saved state before retrying.';
+        return 'Request failed. Input retained. Try again.';
     }
     function syncType() {
         var type = body.find('[name=Type]').val();
@@ -146,7 +146,7 @@
                     return;
                 }
                 var legacy = scope.kind === 'list' && !scope.hasBoard;
-                var text = failed ? 'The current view could not be refreshed. Check its saved state before another change.' : legacy ? 'Your change was saved, but the list could not be refreshed. Reload this page to see it.' : 'Your change was saved, but the view could not be refreshed.';
+                var text = failed ? 'Refresh failed. Check saved state before retrying.' : legacy ? 'Saved. Refresh failed; reload page.' : 'Saved. Refresh failed; reload page.';
                 scope.notice.removeClass('hidden alert-info alert-success').addClass('alert-danger').empty().append($('<span>').text(text));
                 $('<a>').attr('href', scope.recoveryUrl).addClass('alert-link').text(' Reload').appendTo(scope.notice);
             }
@@ -166,7 +166,7 @@
         request.timeout = 20000;
         load = $.ajax(request).done(function (html, status, xhr) {
             if (current !== generation) return;
-            if (xhr.getResponseHeader('X-Workboard-Partial') !== 'modal') { body.empty(); showError('The server did not return the expected form. Close this dialog and try again.'); return; }
+            if (xhr.getResponseHeader('X-Workboard-Partial') !== 'modal') { body.empty(); showError('Form unavailable. Close and retry.'); return; }
             insertPartial(html); baseline = snapshot(); focusForm();
         }).fail(function (xhr, status) {
             if (status === 'abort' || current !== generation) return;
@@ -235,7 +235,7 @@
         captureScopes(); pending = true; modal.data('mutation-pending', true); boardBusy(true);
         error.addClass('hidden').text(''); form.find('[type=submit]').prop('disabled', true);
         $.ajax({url: localUrl(this.action), method: 'POST', data: submitted, processData: !multipart, contentType: multipart ? false : 'application/x-www-form-urlencoded; charset=UTF-8', timeout: multipart ? 60000 : 20000}).done(function (data) {
-            if (!data || data.saved !== true) { showError('The server did not confirm this change. Check the saved list before trying again.'); refreshScopes('Check the current saved state.', true); return; }
+            if (!data || data.saved !== true) { showError('Change unconfirmed. Check saved list before retrying.'); refreshScopes('Check the current saved state.', true); return; }
             allowClose = true; modal.modal('hide'); allowClose = false;
             if (data.redirectUrl) { window.location.assign(localUrl(data.redirectUrl)); return; }
             refreshScopes(data.message || 'Change saved.', false, data);
@@ -243,7 +243,7 @@
             if ([400, 409, 503].indexOf(xhr.status) !== -1 && xhr.getResponseHeader('X-Workboard-Partial') === 'modal') { insertPartial(xhr.responseText, multipart); focusForm(); finish(false); }
             else if (xhr.status === 413 || (multipart && xhr.status === 400)) {
                 var oversized = multipart && form.find('input[type=file]').toArray().some(function (input) { return Array.from(input.files).some(function (file) { return file.size > 5 * 1024 * 1024; }); });
-                showError(oversized ? 'The upload request is too large. Select one file no larger than 5 MiB.' : failureMessage(xhr)); finish(false);
+                showError(oversized ? 'File too large. Maximum 5 MiB.' : failureMessage(xhr)); finish(false);
             }
             else { showError(failureMessage(xhr)); refreshScopes('Check the current saved state.', true); }
         });

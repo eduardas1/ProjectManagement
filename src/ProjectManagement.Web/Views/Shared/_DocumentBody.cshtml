@@ -1,6 +1,6 @@
 @model DocumentPreviewViewModel
 @if (!Enum.IsDefined(Model.Format))
-{ <p class="alert alert-warning">This document uses an unsupported format. Its original text is shown below.</p> }
+{ <p class="alert alert-warning">Unsupported format. Showing plain text.</p> }
 @if (string.IsNullOrEmpty(Model.Body)) { <p class="text-muted">No document text.</p> }
 else
 {

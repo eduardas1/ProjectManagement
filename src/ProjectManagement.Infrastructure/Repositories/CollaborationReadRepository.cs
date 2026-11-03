@@ -101,17 +101,26 @@ public class CollaborationReadRepository(ApplicationDbContext context, ICurrentU
                 people.Where(user => user.Id == revision.EditorId).Select(user => user.Email).Single()),
             revision.SavedAtUtc));
 
-    public async Task<ProjectDocuments?> ListDocumentsAsync(int projectId, int page, CancellationToken cancellationToken)
+    public async Task<ProjectDocuments?> ListDocumentsAsync(int projectId, int page, CancellationToken cancellationToken, TableOptions? table = null)
     {
         var project = await GetDocumentProjectAsync(projectId, cancellationToken);
         if (project == null) return null;
         var query = DocumentQuery(projectId);
         var total = await query.CountAsync(cancellationToken);
-        var pages = Math.Max(1, (total + 19) / 20);
+        table = (table ?? new()).Normalize("title", "title", "version", "updated", "author");
+        var pages = table.Pages(total);
         page = Math.Clamp(page, 1, pages);
-        var items = await SelectDocumentInfo(query.OrderBy(document => document.Title).ThenBy(document => document.Id)
-            .Skip((page - 1) * 20).Take(20)).ToListAsync(cancellationToken);
-        return new ProjectDocuments(project, page, pages, total, items);
+        var ordered = table.Sort switch
+        {
+            "version" => query.SortBy(document => document.Version, table.Descending),
+            "updated" => query.SortBy(document => document.UpdatedAtUtc, table.Descending),
+            "author" => query.SortBy(document => people.Where(user => user.Id == document.UpdatedById).Select(user => user.FirstName + " " + user.LastName + " " + user.Email).FirstOrDefault(), table.Descending),
+            _ => query.SortBy(document => document.Title, table.Descending)
+        };
+        ordered = table.Descending ? ordered.ThenByDescending(document => document.Id) : ordered.ThenBy(document => document.Id);
+        var items = await SelectDocumentInfo(ordered
+            .Skip((page - 1) * table.PageSize).Take(table.PageSize)).ToListAsync(cancellationToken);
+        return new ProjectDocuments(project, page, pages, total, items, table);
     }
 
     public async Task<DocumentDetails?> GetDocumentAsync(int projectId, int documentId, CancellationToken cancellationToken)
@@ -135,7 +144,7 @@ public class CollaborationReadRepository(ApplicationDbContext context, ICurrentU
         return new DocumentDetails(project, info, content.Body, history, content.Format);
     }
 
-    public async Task<DocumentRevisions?> ListRevisionsAsync(int projectId, int documentId, int page, CancellationToken cancellationToken)
+    public async Task<DocumentRevisions?> ListRevisionsAsync(int projectId, int documentId, int page, CancellationToken cancellationToken, TableOptions? table = null)
     {
         var project = await GetDocumentProjectAsync(projectId, cancellationToken);
         if (project == null) return null;
@@ -144,11 +153,20 @@ public class CollaborationReadRepository(ApplicationDbContext context, ICurrentU
         if (document == null) return null;
         var query = RevisionQuery(projectId, documentId);
         var total = await query.CountAsync(cancellationToken);
-        var pages = Math.Max(1, (total + 19) / 20);
+        table = (table ?? new()).Normalize("saved", "version", "title", "saved", "editor");
+        var pages = table.Pages(total);
         page = Math.Clamp(page, 1, pages);
-        var items = await SelectRevisionInfo(query.OrderByDescending(revision => revision.Version)
-            .Skip((page - 1) * 20).Take(20)).ToListAsync(cancellationToken);
-        return new DocumentRevisions(project, document, page, pages, total, items);
+        var ordered = table.Sort switch
+        {
+            "version" => query.SortBy(revision => revision.Version, table.Descending),
+            "title" => query.SortBy(revision => revision.Title, table.Descending),
+            "editor" => query.SortBy(revision => people.Where(user => user.Id == revision.EditorId).Select(user => user.FirstName + " " + user.LastName + " " + user.Email).FirstOrDefault(), table.Descending),
+            _ => query.SortBy(revision => revision.SavedAtUtc, table.Descending)
+        };
+        ordered = table.Descending ? ordered.ThenByDescending(revision => revision.Id) : ordered.ThenBy(revision => revision.Id);
+        var items = await SelectRevisionInfo(ordered
+            .Skip((page - 1) * table.PageSize).Take(table.PageSize)).ToListAsync(cancellationToken);
+        return new DocumentRevisions(project, document, page, pages, total, items, table);
     }
 
     public async Task<DocumentRevisionDetails?> GetRevisionAsync(int projectId, int documentId, int revisionId, CancellationToken cancellationToken)
@@ -199,17 +217,26 @@ public class CollaborationReadRepository(ApplicationDbContext context, ICurrentU
             attachment.UploadedAtUtc, attachment.UploadedById == currentUser.UserId
                 || context.Projects.Any(project => project.Id == attachment.ProjectId && project.OwnerId == currentUser.UserId)));
 
-    public async Task<TargetAttachments?> ListAttachmentsAsync(int projectId, int? workItemId, int? documentId, int page, CancellationToken cancellationToken)
+    public async Task<TargetAttachments?> ListAttachmentsAsync(int projectId, int? workItemId, int? documentId, int page, CancellationToken cancellationToken, TableOptions? table = null)
     {
         var target = await GetAttachmentTargetAsync(projectId, workItemId, documentId, cancellationToken);
         if (target == null) return null;
         var query = AttachmentQuery(projectId).Where(attachment => attachment.WorkItemId == workItemId && attachment.DocumentId == documentId);
         var total = await query.CountAsync(cancellationToken);
-        var pages = Math.Max(1, (total + 19) / 20);
+        table = (table ?? new()).Normalize("uploaded", "name", "size", "uploaded", "author");
+        var pages = table.Pages(total);
         page = Math.Clamp(page, 1, pages);
-        var items = await SelectAttachmentInfo(query.OrderByDescending(attachment => attachment.UploadedAtUtc).ThenByDescending(attachment => attachment.Id)
-            .Skip((page - 1) * 20).Take(20)).ToListAsync(cancellationToken);
-        return new TargetAttachments(target, page, pages, total, items);
+        var ordered = table.Sort switch
+        {
+            "name" => query.SortBy(attachment => attachment.DisplayName, table.Descending),
+            "size" => query.SortBy(attachment => attachment.Length, table.Descending),
+            "author" => query.SortBy(attachment => people.Where(user => user.Id == attachment.UploadedById).Select(user => user.FirstName + " " + user.LastName + " " + user.Email).FirstOrDefault(), table.Descending),
+            _ => query.SortBy(attachment => attachment.UploadedAtUtc, table.Descending)
+        };
+        ordered = table.Descending ? ordered.ThenByDescending(attachment => attachment.Id) : ordered.ThenBy(attachment => attachment.Id);
+        var items = await SelectAttachmentInfo(ordered
+            .Skip((page - 1) * table.PageSize).Take(table.PageSize)).ToListAsync(cancellationToken);
+        return new TargetAttachments(target, page, pages, total, items, table);
     }
 
     public async Task<AttachmentDetails?> GetAttachmentAsync(int projectId, int attachmentId, CancellationToken cancellationToken)

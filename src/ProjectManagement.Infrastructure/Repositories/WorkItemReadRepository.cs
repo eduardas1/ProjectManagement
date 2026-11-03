@@ -27,7 +27,7 @@ public class WorkItemReadRepository(ApplicationDbContext context, ICurrentUser c
             .Select(project => new WorkProject(project.Id, project.Key, project.Name, project.IsArchived, project.OwnerId == currentUser.UserId))
             .SingleOrDefaultAsync(cancellationToken);
 
-    public async Task<WorkItemList?> ListAsync(int projectId, int page, CancellationToken cancellationToken, WorkItemStatus? status = null)
+    public async Task<WorkItemList?> ListAsync(int projectId, int page, CancellationToken cancellationToken, WorkItemStatus? status = null, TableOptions? table = null)
     {
         if (status.HasValue && !Enum.IsDefined(status.Value)) throw new ArgumentOutOfRangeException(nameof(status));
         var project = await GetProjectAsync(projectId, cancellationToken);
@@ -35,16 +35,28 @@ public class WorkItemReadRepository(ApplicationDbContext context, ICurrentUser c
         var query = WorkQuery(projectId);
         if (status.HasValue) query = query.Where(work => work.Status == status.Value);
         var total = await query.CountAsync(cancellationToken);
-        var pages = Math.Max(1, (total + 19) / 20);
+        table = (table ?? new()).Normalize("number", "number", "title", "type", "status", "priority", "assignee", "deadline");
+        var pages = table.Pages(total);
         page = Math.Clamp(page, 1, pages);
-        var items = await query.OrderBy(work => work.Number).ThenBy(work => work.Id).Skip((page - 1) * 20).Take(20)
+        var ordered = table.Sort switch
+        {
+            "title" => query.SortBy(work => work.Title, table.Descending),
+            "type" => query.SortBy(work => work.Type, table.Descending),
+            "status" => query.SortBy(work => work.Status, table.Descending),
+            "priority" => query.SortBy(work => work.Priority, table.Descending),
+            "deadline" => query.SortBy(work => work.DueDate, table.Descending),
+            "assignee" => query.SortBy(work => people.Where(user => user.Id == work.AssigneeId)
+                .Select(user => user.FirstName + " " + user.LastName + " " + user.Email).FirstOrDefault(), table.Descending),
+            _ => query.SortBy(work => work.Number, table.Descending)
+        };
+        var items = await ordered.ThenBy(work => work.Id).Skip((page - 1) * table.PageSize).Take(table.PageSize)
             .Select(work => new WorkItemSummary(work.Id, work.Number, work.Title, work.Type, work.Status, work.Priority,
                 (work.AssigneeId == null ? null : new PersonSummary(work.AssigneeId,
                 people.Where(user => user.Id == work.AssigneeId).Select(user => user.FirstName).FirstOrDefault() ?? "",
                 people.Where(user => user.Id == work.AssigneeId).Select(user => user.LastName).FirstOrDefault() ?? "",
                 people.Where(user => user.Id == work.AssigneeId).Select(user => user.Email).FirstOrDefault() ?? "")), work.DueDate, work.Version))
             .ToListAsync(cancellationToken);
-        return new WorkItemList(project, page, pages, total, items, status);
+        return new WorkItemList(project, page, pages, total, items, status, table);
     }
 
     public async Task<WorkBoard?> GetBoardAsync(int projectId, CancellationToken cancellationToken)

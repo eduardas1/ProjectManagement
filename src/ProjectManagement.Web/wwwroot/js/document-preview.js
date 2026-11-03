@@ -24,7 +24,7 @@
             content.empty().append($('<div>').addClass(format === '1' ? 'document-body document-markdown' : 'document-body document-plain')
                 .append($.parseHTML(html, document, false))).removeClass('hidden');
             status.text(form.find('[name=Body]').val() === submittedBody && form.find('[name=Format]').val() === submittedFormat
-                ? 'Preview only. Save the document to keep your changes.' : 'Text changed after this preview. Preview again to see the current draft.');
+                ? 'Preview only. Save the document to keep your changes.' : 'Preview out of date. Preview again.');
         }).fail(function (xhr, state) {
             if (!live() || state === 'abort') return;
             status.text(xhr.status === 401 ? 'Sign in again to preview. Your text is unchanged.' : 'Preview could not be loaded. Your text is unchanged.');

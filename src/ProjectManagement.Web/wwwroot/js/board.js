@@ -84,17 +84,17 @@
         };
         $.ajax({url: url.href, method: 'POST', data: input}).done(function (data) {
             if (!data || data.saved !== true) {
-                refresh('The server did not confirm the change. Check the current item status before trying again.', true);
+                refresh('Change unconfirmed. Check status before retrying.', true);
                 return;
             }
             refresh('Work status saved.', false, item);
         }).fail(function (xhr) {
-            var text = 'The change could not be confirmed. Check the current item status before trying again.';
+            var text = 'Change unconfirmed. Check status before retrying.';
             if ([400, 409, 503].indexOf(xhr.status) !== -1 && xhr.getResponseHeader('X-Workboard-Partial') === 'modal') {
                 var errors = $('<div>').append($.parseHTML(xhr.responseText, document, false)).find('.validation-summary-errors').text().trim();
-                text = errors || 'The status change was rejected. Check the current item before trying again.';
-            } else if (xhr.status === 401) text = 'Your session has ended. Sign in again before changing work.';
-            else if (xhr.status === 403 || xhr.status === 404) text = 'This item or project is no longer available to your account.';
+                text = errors || 'Change rejected. Reload item before retrying.';
+            } else if (xhr.status === 401) text = 'Session expired. Sign in again.';
+            else if (xhr.status === 403 || xhr.status === 404) text = 'Item unavailable or access denied.';
             refresh(text, true);
         });
     }

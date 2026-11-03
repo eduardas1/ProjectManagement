@@ -81,9 +81,9 @@ public class WorkSearchSyntax : ISearchDefinitionValidator
         foreach (var part in ordering.Split(','))
         {
             var words = part.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
-            if (words.Length is < 1 or > 2 || words[0] is not ("number" or "title" or "deadline")
+            if (words.Length is < 1 or > 2 || words[0] is not ("number" or "title" or "deadline" or "type" or "status" or "priority" or "assignee")
                 || (words.Length == 2 && words[1] is not ("asc" or "desc")) || !seen.Add(words[0]))
-                return "Order by number, title or deadline, optionally asc or desc, without duplicates.";
+                return "Select a valid sort column and direction.";
         }
         return null;
     }

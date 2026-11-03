@@ -50,8 +50,8 @@ public class TableTagHelper : TagHelper
             link.InnerHtml.Append(label);
             footer.InnerHtml.AppendHtml(link);
         }
-        AddSelect(footer, "Page", "data-table-page", Enumerable.Range(1, pages).Select(page => (page, page.ToString())), TablePage, PageKey);
-        AddSelect(footer, "Rows", "data-table-size", new[] { 10, 20, 50, 100 }.Select(size => (size, size.ToString())), TableOptions.PageSize, SizeKey);
+        if (pages > 1) AddSelect(footer, "Page", "data-table-page", Enumerable.Range(1, pages).Select(page => (page, page.ToString())), TablePage, PageKey);
+        AddSelect(footer, "Rows", "data-table-size", new[] { 10, 20, 50, 100, TableOptions.PageSize }.Distinct().Order().Select(size => (size, size.ToString())), TableOptions.PageSize, SizeKey);
         output.PostElement.AppendHtml(footer);
     }
 

@@ -41,7 +41,8 @@
                 var body = table.children('tbody');
                 rows.forEach(function (row, index) { body.append(row); $(row).toggleClass('hidden', index < (page - 1) * size || index >= page * size); });
                 status.text('Page ' + page + ' of ' + pages + ' (' + rows.length + ' items)');
-                previous.prop('disabled', page === 1); next.prop('disabled', page === pages);
+                previous.prop('disabled', page === 1).toggle(pages > 1); next.prop('disabled', page === pages).toggle(pages > 1);
+                pageSelect.parent().toggle(pages > 1);
                 pageSelect.empty(); for (var n = 1; n <= pages; n++) $('<option>').val(n).text(n).appendTo(pageSelect); pageSelect.val(page);
                 headers.each(function (index) {
                     if (!$(this).find('[data-local-sort]').length) return;
